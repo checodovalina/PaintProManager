@@ -40,16 +40,19 @@ export default function NewServiceOrderModal({ isOpen, onClose }: NewServiceOrde
   const { data: projectsData, isLoading: isLoadingProjects } = useQuery<{projects: ProjectWithClient[]}>({
     queryKey: ['/api/projects'],
     select: (data) => {
+      console.log("Datos originales de proyectos:", data);
       if (!data || !data.projects) return { projects: [] };
       // Filtrar proyectos con cotizaciones enviadas, aprobadas o en progreso
       const filteredProjects = data.projects.filter((project: ProjectWithClient) => 
         ['quote_sent', 'quote_approved', 'in_preparation', 'in_progress'].includes(project.status)
       );
+      console.log("Proyectos filtrados:", filteredProjects);
       return { projects: filteredProjects };
     }
   });
   
   const projects: ProjectWithClient[] = projectsData?.projects || [];
+  console.log("Proyectos disponibles para la vista:", projects);
   
   // Configurar el formulario
   const form = useForm<FormValues>({
