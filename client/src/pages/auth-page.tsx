@@ -1,3 +1,4 @@
+import React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -29,11 +30,13 @@ export default function AuthPage() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
 
-  // Redirect to home if user is already logged in
-  if (user) {
-    navigate("/");
-    return null;
-  }
+  // Use an effect for navigation instead of conditional return
+  React.useEffect(() => {
+    // Redirect to home if user is already logged in
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
