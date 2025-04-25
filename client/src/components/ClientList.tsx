@@ -54,14 +54,14 @@ export default function ClientList({ clients, onEdit, onDelete, onFollowUp, isLo
     }
   };
   
-  const getStatusColor = (isProspect: boolean) => {
-    return isProspect 
+  const getStatusColor = (isProspect: boolean | null) => {
+    return isProspect === true
       ? "bg-yellow-100 text-yellow-800" 
       : "bg-green-100 text-green-800";
   };
   
   const isOverdueForFollowUp = (client: Client) => {
-    if (!client.nextFollowUp || !client.isProspect) return false;
+    if (!client.nextFollowUp || client.isProspect !== true) return false;
     
     const followUpDate = new Date(client.nextFollowUp);
     const today = new Date();

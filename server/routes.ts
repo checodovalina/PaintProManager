@@ -211,6 +211,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: "Failed to update client" });
     }
   });
+  
+  app.delete(`${apiPrefix}/clients/:id`, async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.id);
+      
+      // Primero verificamos si existen proyectos asociados a este cliente
+      const client = await storage.getClientById(clientId);
+      if (!client) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+      
+      if (client.projects && client.projects.length > 0) {
+        return res.status(400).json({ 
+          message: "Cannot delete client with associated projects. Please delete or reassign projects first." 
+        });
+      }
+      
+      // Si no hay proyectos asociados, procedemos con la eliminación
+      const deletedClient = await storage.deleteClient(clientId);
+      
+      return res.json({ 
+        message: "Client successfully deleted", 
+        client: deletedClient 
+      });
+    } catch (error) {
+      console.error("Error deleting client:", error);
+      return res.status(500).json({ message: "Failed to delete client" });
+    }
+  });
 
   // Projects
   app.get(`${apiPrefix}/projects`, async (req, res) => {

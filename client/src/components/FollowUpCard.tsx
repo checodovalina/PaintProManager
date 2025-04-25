@@ -199,8 +199,8 @@ export default function FollowUpCard({ clients, onFollowUp, isLoading }: FollowU
                   <Calendar
                     mode="single"
                     selected={nextFollowUpDate}
-                    onSelect={(date) => date && setNextFollowUpDate(date)}
-                    disabled={(date) =>
+                    onSelect={(date: Date | undefined) => date && setNextFollowUpDate(date)}
+                    disabled={(date: Date) =>
                       date < new Date(new Date().setHours(0, 0, 0, 0))
                     }
                     initialFocus

@@ -333,15 +333,32 @@ export const storage = {
     if (data.lastContactDate && !data.nextFollowUp) {
       const nextFollowUp = new Date(data.lastContactDate);
       nextFollowUp.setDate(nextFollowUp.getDate() + 7); // Siguiente seguimiento en 7 días por defecto
-      data.nextFollowUp = nextFollowUp;
+      data.nextFollowUp = nextFollowUp.toISOString().split('T')[0];
+    }
+    
+    // Convertir fechas tipo Date a string para PostgreSQL
+    let updatedData = { ...data };
+    if (updatedData.lastContactDate instanceof Date) {
+      updatedData.lastContactDate = updatedData.lastContactDate.toISOString().split('T')[0];
+    }
+    if (updatedData.nextFollowUp instanceof Date) {
+      updatedData.nextFollowUp = updatedData.nextFollowUp.toISOString().split('T')[0];
     }
     
     const [updatedClient] = await db
       .update(clients)
-      .set(data)
+      .set(updatedData)
       .where(eq(clients.id, id))
       .returning();
     return updatedClient;
+  },
+  
+  async deleteClient(id: number) {
+    const [deletedClient] = await db
+      .delete(clients)
+      .where(eq(clients.id, id))
+      .returning();
+    return deletedClient;
   },
   
   // Project operations
