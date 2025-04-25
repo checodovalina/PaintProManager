@@ -154,6 +154,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   projects: many(projects),
   projectImages: many(projectImages),
   activities: many(activities),
+  serviceOrders: many(serviceOrders),
 }));
 
 export const clientsRelations = relations(clients, ({ many, one }) => ({
@@ -205,6 +206,10 @@ export const serviceOrdersRelations = relations(serviceOrders, ({ one }) => ({
   project: one(projects, {
     fields: [serviceOrders.projectId],
     references: [projects.id],
+  }),
+  createdByUser: one(users, {
+    fields: [serviceOrders.createdBy],
+    references: [users.id],
   }),
 }));
 
