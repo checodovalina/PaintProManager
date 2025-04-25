@@ -33,12 +33,13 @@ interface NewProjectModalProps {
 }
 
 interface FormData {
-  clientId: string;
-  projectType: string;
+  title: string;
+  clientId: number;
   description: string;
   visitDate: Date;
-  priority: string;
+  priority: "normal" | "high" | "urgent";
   address: string;
+  notes?: string;
 }
 
 export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProps) {
@@ -50,33 +51,53 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
     queryKey: ['/api/clients'],
   });
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<FormData>({
+  const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<FormData>({
     defaultValues: {
-      clientId: "",
-      projectType: "Interior Painting",
+      title: "",
+      clientId: 0,
       description: "",
-      priority: "Normal",
+      priority: "normal",
       address: "",
+      notes: ""
     }
   });
+
+  // Watch form fields for validation
+  const watchClientId = watch("clientId");
+  const watchTitle = watch("title");
 
   // Create project mutation
   const createProjectMutation = useMutation({
     mutationFn: (data: FormData) => {
-      return apiRequest("POST", "/api/projects", data);
+      // Format the data for the API
+      const apiData = {
+        ...data,
+        // Convert clientId to number if it's a string
+        clientId: typeof data.clientId === 'string' ? parseInt(data.clientId) : data.clientId,
+        // Format date to string "YYYY-MM-DD"
+        visitDate: date ? date.toISOString().split('T')[0] : null,
+        // Make sure priority matches the enum values
+        priority: data.priority.toLowerCase() as "normal" | "high" | "urgent",
+        // Default status to pending_visit
+        status: "pending_visit" as const,
+        // Get user ID from the current auth session
+        createdBy: 1, // Will be replaced by actual user ID in the backend
+      };
+      
+      return apiRequest("POST", "/api/projects", apiData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      // Also update dashboard data and activities
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/activities'] });
       onClose();
       reset();
     }
   });
 
   const onSubmit = (data: FormData) => {
-    if (date) {
-      data.visitDate = date;
-      createProjectMutation.mutate(data);
-    }
+    createProjectMutation.mutate(data);
   };
 
   return (
@@ -88,8 +109,18 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="mt-4 space-y-4">
             <div className="space-y-2">
+              <Label htmlFor="title">Project Title</Label>
+              <Input 
+                id="title" 
+                placeholder="Project title or name" 
+                {...register("title", { required: true })}
+              />
+              {errors.title && <p className="text-sm text-red-500">Title is required</p>}
+            </div>
+            
+            <div className="space-y-2">
               <Label htmlFor="clientId">Client</Label>
-              <Select onValueChange={(value) => register("clientId").onChange({ target: { value } })} {...register("clientId", { required: true })}>
+              <Select onValueChange={(value) => setValue("clientId", parseInt(value))} {...register("clientId", { required: true, valueAsNumber: true })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Search or select client" />
                 </SelectTrigger>
@@ -104,22 +135,6 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
                 </SelectContent>
               </Select>
               {errors.clientId && <p className="text-sm text-red-500">Client is required</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="projectType">Project Type</Label>
-              <Select defaultValue="Interior Painting" onValueChange={(value) => register("projectType").onChange({ target: { value } })} {...register("projectType", { required: true })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select project type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Interior Painting">Interior Painting</SelectItem>
-                  <SelectItem value="Exterior Painting">Exterior Painting</SelectItem>
-                  <SelectItem value="Commercial Repaint">Commercial Repaint</SelectItem>
-                  <SelectItem value="Decorative Finishes">Decorative Finishes</SelectItem>
-                  <SelectItem value="Repair & Restoration">Repair & Restoration</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="space-y-2">
@@ -161,14 +176,14 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
 
               <div className="space-y-2">
                 <Label htmlFor="priority">Priority</Label>
-                <Select defaultValue="Normal" onValueChange={(value) => register("priority").onChange({ target: { value } })} {...register("priority")}>
+                <Select defaultValue="normal" onValueChange={(value) => setValue("priority", value as "normal" | "high" | "urgent")} {...register("priority")}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Normal">Normal</SelectItem>
-                    <SelectItem value="High">High</SelectItem>
-                    <SelectItem value="Urgent">Urgent</SelectItem>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -182,6 +197,15 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
                 {...register("address", { required: true })}
               />
               {errors.address && <p className="text-sm text-red-500">Address is required</p>}
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes (Optional)</Label>
+              <Textarea 
+                id="notes" 
+                placeholder="Additional details or special instructions"
+                {...register("notes")}
+              />
             </div>
           </div>
 
