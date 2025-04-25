@@ -1,0 +1,121 @@
+ App para Gestión de Compañía de Pintura — “PinturaPro”
+🧱 Módulos Principales
+1. Clientes y Prospectos
+Registro y edición de clientes o prospectos.
+
+Clasificación: residencial, comercial, industrial.
+
+Seguimiento automático con alertas para contacto o visitas.
+
+Historial de interacciones por cliente.
+
+2. Presupuestos
+Creación de presupuestos profesionales en PDF (inglés y español).
+
+Cálculo automático: materiales, mano de obra, utilidad.
+
+Firma digital del cliente.
+
+Envío por correo o WhatsApp.
+
+3. Órdenes de Servicio
+Detalles del trabajo: descripción, tiempos estimados, ubicación.
+
+Asignación de personal o subcontratistas.
+
+Adjuntar imágenes antes/después.
+
+Firma digital al iniciar y finalizar.
+
+Estado: pendiente, en proceso, finalizado, cancelado.
+
+4. Gestión de Proyectos
+Proyectos por cliente o agrupación de órdenes.
+
+Vista de avance por etapas (preparación, aplicación, retoques).
+
+Subida de evidencias (fotos, documentos).
+
+Historial de actividades.
+
+5. Control de Personal
+Registro de trabajadores/subcontratistas.
+
+Asignación a órdenes o proyectos.
+
+Reporte de avances diarios.
+
+Comunicación interna tipo chat o notificaciones.
+
+6. Facturación y Pagos
+Factura automática tras terminar trabajo (PDF).
+
+Registro de métodos de pago.
+
+Historial de ingresos por cliente, mes o proyecto.
+
+Integración opcional con SAT o CFDI simplificado.
+
+7. Reportes y Análisis
+Ingresos por mes, total de proyectos finalizados.
+
+Reportes de rentabilidad por proyecto o cliente.
+
+Exportación en PDF o Excel.
+
+📊 Dashboard Principal
+🧭 Pipeline Visual de Trabajos (Kanban)
+Tablero interactivo con tarjetas por orden de servicio para visualizar avance.
+
+🪜 Etapas:
+Pendiente por visitar
+
+Presupuesto enviado
+
+Presupuesto aprobado
+
+En preparación
+
+En proceso
+
+En revisión final
+
+Finalizado
+
+Archivado
+
+📦 Cada tarjeta muestra:
+Cliente, dirección
+
+Servicio contratado
+
+Fechas de inicio y fin estimadas
+
+Prioridad (urgente, normal)
+
+Botón para ver detalles
+
+Posibilidad de mover entre columnas (drag & drop)
+
+🔎 Funciones adicionales:
+Filtros por tipo de trabajo, ubicación, responsable
+
+Colores según estado (verde: en tiempo, rojo: retrasado)
+
+Notificaciones por cambios o tareas urgentes
+
+💰 Cálculo de Utilidad Mensual Aproximada
+Módulo destacado en la parte superior del dashboard
+
+Contenido:
+Mes actual (ej. Abril 2025)
+
+Utilidad Estimada: Ingresos – Costos Directos
+
+Desglose:
+
+Ingresos totales del mes (trabajos finalizados)
+
+Costos de materiales
+
+Costos de mano de obra
