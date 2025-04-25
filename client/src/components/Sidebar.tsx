@@ -34,19 +34,19 @@ export default function Sidebar({ open, toggleSidebar }: SidebarProps) {
   // Navigation items
   const navItems = [
     { icon: TrendingUp, name: "Dashboard", path: "/" },
-    { icon: Users, name: "Clients & Prospects", path: "/clients" },
-    { icon: FileText, name: "Quotes", path: "/quotes" },
-    { icon: Clipboard, name: "Service Orders", path: "/orders" },
-    { icon: GitBranch, name: "Projects", path: "/projects" },
-    { icon: HardHat, name: "Personnel", path: "/personnel" },
-    { icon: File, name: "Invoicing", path: "/invoicing" },
-    { icon: BarChart3, name: "Reports", path: "/reports" },
+    { icon: Users, name: "Clients & Prospects", shortName: "Clients", path: "/clients" },
+    { icon: FileText, name: "Cotizaciones", shortName: "Quotes", path: "/quotes" },
+    { icon: Clipboard, name: "Service Orders", shortName: "Orders", path: "/orders" },
+    { icon: GitBranch, name: "Projects", shortName: "Projects", path: "/projects" },
+    { icon: HardHat, name: "Personnel", shortName: "Personnel", path: "/personnel" },
+    { icon: File, name: "Invoicing", shortName: "Invoicing", path: "/invoicing" },
+    { icon: BarChart3, name: "Reports", shortName: "Reports", path: "/reports" },
   ];
 
   // Admin menu items
   const adminItems = [
-    { icon: UserCog, name: "User Management", path: "/users" },
-    { icon: Settings, name: "System Settings", path: "/settings" },
+    { icon: UserCog, name: "User Management", shortName: "Users", path: "/users" },
+    { icon: Settings, name: "System Settings", shortName: "Settings", path: "/settings" },
   ];
 
   // Handle logout
@@ -54,14 +54,20 @@ export default function Sidebar({ open, toggleSidebar }: SidebarProps) {
     logoutMutation.mutate();
   };
 
-  if (!open) return null;
+  // For mobile, if sidebar is closed, we don't show it at all
+  if (isMobile && !open) return null;
 
   return (
     <div 
-      className={`${isMobile ? 'fixed inset-y-0 left-0 z-50' : 'flex-shrink-0'} ${
-        open ? 'block' : 'hidden'
-      } md:block shadow-lg`}
-      style={{ maxWidth: isMobile ? '80%' : '300px' }}
+      className={`
+        ${isMobile ? 'fixed inset-y-0 left-0 z-50' : 'flex-shrink-0'} 
+        ${open ? 'block' : 'hidden'}
+        md:block shadow-lg
+      `}
+      style={{ 
+        width: isMobile ? '75%' : '300px',
+        maxWidth: isMobile ? '280px' : '300px'
+      }}
     >
       <div className="flex flex-col w-full h-full bg-slate-900 text-white">
         {/* Logo & Header */}
@@ -96,7 +102,7 @@ export default function Sidebar({ open, toggleSidebar }: SidebarProps) {
               )}
             >
               <item.icon className="mr-3 h-5 w-5" />
-              {item.name}
+              {isMobile && item.shortName ? item.shortName : item.name}
             </Link>
           ))}
 
@@ -119,7 +125,7 @@ export default function Sidebar({ open, toggleSidebar }: SidebarProps) {
                   )}
                 >
                   <item.icon className="mr-3 h-5 w-5" />
-                  {item.name}
+                  {isMobile && item.shortName ? item.shortName : item.name}
                 </Link>
               ))}
             </div>
