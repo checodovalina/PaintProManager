@@ -41,9 +41,9 @@ export default function NewServiceOrderModal({ isOpen, onClose }: NewServiceOrde
     queryKey: ['/api/projects'],
     select: (data) => {
       if (!data || !data.projects) return { projects: [] };
-      // Filtrar solo proyectos con cotizaciones aprobadas o en progreso
+      // Filtrar proyectos con cotizaciones enviadas, aprobadas o en progreso
       const filteredProjects = data.projects.filter((project: ProjectWithClient) => 
-        ['quote_approved', 'in_preparation', 'in_progress'].includes(project.status)
+        ['quote_sent', 'quote_approved', 'in_preparation', 'in_progress'].includes(project.status)
       );
       return { projects: filteredProjects };
     }
