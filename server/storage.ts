@@ -267,6 +267,14 @@ export const storage = {
     });
   },
   
+  async getClientsRequiringFollowUp() {
+    const today = new Date();
+    return db.query.clients.findMany({
+      where: sql`${clients.nextFollowUp} <= ${today} AND ${clients.isProspect} = true`,
+      orderBy: [clients.nextFollowUp]
+    });
+  },
+  
   async getClientById(id: number) {
     return db.query.clients.findFirst({
       where: eq(clients.id, id),
@@ -277,11 +285,57 @@ export const storage = {
   },
   
   async createClient(data: ClientInsert) {
+    // Si es un prospecto, establecer la fecha de siguiente seguimiento
+    // al día siguiente si no se especifica
+    if (data.isProspect && !data.nextFollowUp) {
+      const nextDay = new Date();
+      nextDay.setDate(nextDay.getDate() + 7); // Seguimiento en 7 días por defecto
+      data.nextFollowUp = nextDay;
+    }
+    
+    // Establecer la fecha de último contacto a hoy si no se especifica
+    if (!data.lastContactDate) {
+      data.lastContactDate = new Date();
+    }
+    
     const [client] = await db.insert(clients).values(data).returning();
+    
+    // Crear actividad para el nuevo cliente o prospecto
+    await this.createActivity({
+      title: `Nuevo ${data.isProspect ? 'prospecto' : 'cliente'} creado: ${data.name}`,
+      description: `Tipo: ${data.type}`,
+      type: "info",
+      relatedId: client.id,
+      relatedType: "client",
+      createdBy: data.createdBy || 1 // Usuario admin por defecto
+    });
+    
     return client;
   },
   
   async updateClient(id: number, data: Partial<ClientInsert>) {
+    // Si el cliente pasa de prospecto a cliente, crear actividad
+    if (data.isProspect === false) {
+      const client = await this.getClientById(id);
+      if (client && client.isProspect) {
+        await this.createActivity({
+          title: `Prospecto convertido a cliente: ${client.name}`,
+          description: `El prospecto ha sido convertido a cliente regular`,
+          type: "contract",
+          relatedId: client.id,
+          relatedType: "client",
+          createdBy: data.createdBy || 1
+        });
+      }
+    }
+    
+    // Si se actualiza la fecha de último contacto, establecer una nueva fecha de seguimiento
+    if (data.lastContactDate && !data.nextFollowUp) {
+      const nextFollowUp = new Date(data.lastContactDate);
+      nextFollowUp.setDate(nextFollowUp.getDate() + 7); // Siguiente seguimiento en 7 días por defecto
+      data.nextFollowUp = nextFollowUp;
+    }
+    
     const [updatedClient] = await db
       .update(clients)
       .set(data)

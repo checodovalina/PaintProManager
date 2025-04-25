@@ -156,6 +156,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: "Failed to fetch clients" });
     }
   });
+  
+  // Clients requiring follow-up
+  app.get(`${apiPrefix}/clients/follow-up`, async (req, res) => {
+    try {
+      const clients = await storage.getClientsRequiringFollowUp();
+      return res.json(clients);
+    } catch (error) {
+      console.error("Error fetching clients requiring follow-up:", error);
+      return res.status(500).json({ message: "Failed to fetch clients requiring follow-up" });
+    }
+  });
 
   app.get(`${apiPrefix}/clients/:id`, async (req, res) => {
     try {
