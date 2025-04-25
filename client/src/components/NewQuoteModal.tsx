@@ -161,7 +161,17 @@ export default function NewQuoteModal({
       return;
     }
 
-    createQuoteMutation.mutate(formData);
+    // Convertir valores numéricos a strings para la API
+    const dataToSubmit = {
+      ...formData,
+      materialsCost: formData.materialsCost.toString(),
+      laborCost: formData.laborCost.toString(),
+      additionalCosts: formData.additionalCosts.toString(),
+      margin: formData.margin.toString(),
+      totalAmount: formData.totalAmount.toString()
+    };
+
+    createQuoteMutation.mutate(dataToSubmit);
   };
 
   return (
