@@ -382,7 +382,7 @@ export const storage = {
     });
   },
   
-  async createProject(data: ProjectInsert) {
+  async createProject(data: ProjectInsert, userId: number) {
     const [project] = await db.insert(projects).values(data).returning();
     
     // Create activity for new project
@@ -392,7 +392,7 @@ export const storage = {
       type: "info",
       relatedId: project.id,
       relatedType: "project",
-      createdBy: 1 // Default admin user
+      createdBy: userId // Use the authenticated user ID
     });
     
     return project;
@@ -458,7 +458,7 @@ export const storage = {
     });
   },
   
-  async createQuote(data: QuoteInsert) {
+  async createQuote(data: QuoteInsert, userId: number) {
     const [quote] = await db.insert(quotes).values(data).returning();
     
     // Update project status to quote_sent if it was pending_visit
@@ -474,7 +474,7 @@ export const storage = {
       type: "info",
       relatedId: quote.id,
       relatedType: "quote",
-      createdBy: 1 // Default admin user
+      createdBy: userId // Use the current user's ID
     });
     
     return quote;

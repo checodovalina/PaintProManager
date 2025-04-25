@@ -267,8 +267,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post(`${apiPrefix}/projects`, async (req, res) => {
     try {
-      const validatedData = projectsInsertSchema.parse(req.body);
-      const newProject = await storage.createProject(validatedData);
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const validatedData = projectsInsertSchema.parse({
+        ...req.body,
+        createdBy: req.user.id // Use the authenticated user ID
+      });
+      
+      const newProject = await storage.createProject(validatedData, req.user.id);
       return res.status(201).json(newProject);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -298,6 +306,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch(`${apiPrefix}/projects/:id/status`, async (req, res) => {
     try {
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
       const { status } = req.body;
       const projectId = parseInt(req.params.id);
       const updatedProject = await storage.updateProjectStatus(projectId, status);
@@ -312,7 +324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: "info",
         relatedId: projectId,
         relatedType: "project",
-        createdBy: req.session.userId || 1  // Default to admin if no user in session
+        createdBy: req.user.id  // Use authenticated user's ID
       });
       
       return res.json(updatedProject);
@@ -360,8 +372,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post(`${apiPrefix}/quotes`, async (req, res) => {
     try {
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
       const validatedData = quotesInsertSchema.parse(req.body);
-      const newQuote = await storage.createQuote(validatedData);
+      const newQuote = await storage.createQuote(validatedData, req.user.id);
       return res.status(201).json(newQuote);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -411,6 +427,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Project Images
   app.post(`${apiPrefix}/project-images/:projectId`, async (req, res) => {
     try {
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
       const { imageUrl, type, caption } = req.body;
       const projectId = parseInt(req.params.projectId);
       
@@ -419,7 +439,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         imageUrl,
         type,
         caption,
-        uploadedBy: req.session.userId || 1
+        uploadedBy: req.user.id
       });
       
       return res.status(201).json(newImage);
