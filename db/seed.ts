@@ -6,50 +6,67 @@ async function seed() {
   try {
     console.log("Starting database seed...");
 
+    // Helper function to hash passwords
+    async function hashPassword(password: string) {
+      const crypto = await import('crypto');
+      const salt = crypto.randomBytes(16).toString('hex');
+      const hash = await new Promise<Buffer>((resolve, reject) => {
+        crypto.scrypt(password, salt, 64, (err: Error | null, derivedKey: Buffer) => {
+          if (err) reject(err);
+          resolve(derivedKey);
+        });
+      });
+      return `${hash.toString('hex')}.${salt}`;
+    }
+
     // Check if we already have users
     const existingUsers = await db.query.users.findMany();
     if (existingUsers.length === 0) {
       console.log("Seeding users...");
+      
+      // Hash the passwords before storing them
+      const hashedPassword = await hashPassword("password123");
+      
       const users = await db.insert(schema.users).values([
         {
           username: "sdovalina",
-          password: "password123", // En producción, esto estaría hasheado
-          fullName: "Samuel Dovalina",
+          password: hashedPassword,
+          fullName: "Santiago Dovalina",
           email: "sdovalina@dovalinapainting.com",
           role: "superadmin"
         },
         {
           username: "dianashindledecker",
-          password: "password123", // En producción, esto estaría hasheado
+          password: hashedPassword,
           fullName: "Diana Shindledecker",
           email: "diana@dovalinapainting.com",
           role: "admin"
         },
         {
           username: "davidshindledecker",
-          password: "password123", // En producción, esto estaría hasheado
+          password: hashedPassword,
           fullName: "David Shindledecker",
           email: "david@dovalinapainting.com",
           role: "admin"
         },
         {
           username: "alexdovalina",
-          password: "password123", // En producción, esto estaría hasheado
+          password: hashedPassword,
           fullName: "Alex Dovalina",
           email: "alex@dovalinapainting.com",
           role: "admin"
         },
         {
           username: "member",
-          password: "password123", // En producción, esto estaría hasheado
-          fullName: "Usuario Miembro",
+          password: hashedPassword,
+          fullName: "Team Member",
           email: "member@dovalinapainting.com",
           role: "member"
         },
         {
           username: "viewer",
-          password: "password123", // En producción, esto estaría hasheado
-          fullName: "Usuario Visualizador",
+          password: hashedPassword,
+          fullName: "Viewer User",
           email: "viewer@dovalinapainting.com",
           role: "viewer"
         }

@@ -18,15 +18,15 @@ import {
 import { z } from "zod";
 import { setupAuth } from "./auth";
 
-// Middleware para verificar si el usuario tiene el rol permitido
+// Middleware to check if user has the required role
 const checkRole = (roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "No autorizado" });
+      return res.status(401).json({ message: "Unauthorized" });
     }
     
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ message: "No tienes permisos para realizar esta acción" });
+      return res.status(403).json({ message: "You don't have permission to perform this action" });
     }
     
     next();
@@ -37,22 +37,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API routes prefix
   const apiPrefix = '/api';
 
-  // Configuración de autenticación con Passport
+  // Setup authentication with Passport
   setupAuth(app);
 
-  // Rutas para el módulo de usuarios (solo accesible por administradores)
+  // User module routes (only accessible by administrators)
   app.get(`${apiPrefix}/users`, checkRole(['superadmin', 'admin']), async (req, res) => {
     try {
       const users = await storage.getAllUsers();
-      // No devolver las contraseñas
+      // Don't return passwords
       const usersWithoutPasswords = users.map(user => {
         const { password, ...userWithoutPassword } = user;
         return userWithoutPassword;
       });
       return res.json(usersWithoutPasswords);
     } catch (error) {
-      console.error("Error al obtener usuarios:", error);
-      return res.status(500).json({ message: "Error al obtener la lista de usuarios" });
+      console.error("Error getting users:", error);
+      return res.status(500).json({ message: "Error retrieving the user list" });
     }
   });
 
@@ -60,15 +60,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertUserSchema.parse(req.body);
       const newUser = await storage.createUser(validatedData);
-      // No devolver la contraseña
+      // Don't return password
       const { password, ...userWithoutPassword } = newUser;
       return res.status(201).json(userWithoutPassword);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ errors: error.errors });
       }
-      console.error("Error al crear usuario:", error);
-      return res.status(500).json({ message: "Error al crear el usuario" });
+      console.error("Error creating user:", error);
+      return res.status(500).json({ message: "Error creating the user" });
     }
   });
 
@@ -76,41 +76,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = await storage.getUser(parseInt(req.params.id));
       if (!user) {
-        return res.status(404).json({ message: "Usuario no encontrado" });
+        return res.status(404).json({ message: "User not found" });
       }
-      // No devolver la contraseña
+      // Don't return password
       const { password, ...userWithoutPassword } = user;
       return res.json(userWithoutPassword);
     } catch (error) {
-      console.error("Error al obtener usuario:", error);
-      return res.status(500).json({ message: "Error al obtener el usuario" });
+      console.error("Error getting user:", error);
+      return res.status(500).json({ message: "Error retrieving the user" });
     }
   });
 
   app.patch(`${apiPrefix}/users/:id`, checkRole(['superadmin', 'admin']), async (req, res) => {
     try {
-      // Solo superadmin puede modificar a otro superadmin
+      // Only superadmin can modify another superadmin
       if (req.user.role !== 'superadmin') {
         const userToUpdate = await storage.getUser(parseInt(req.params.id));
         if (userToUpdate && userToUpdate.role === 'superadmin') {
-          return res.status(403).json({ message: "No tienes permisos para modificar a un superadmin" });
+          return res.status(403).json({ message: "You don't have permission to modify a superadmin" });
         }
       }
 
       const validatedData = insertUserSchema.partial().parse(req.body);
       const updatedUser = await storage.updateUser(parseInt(req.params.id), validatedData);
       if (!updatedUser) {
-        return res.status(404).json({ message: "Usuario no encontrado" });
+        return res.status(404).json({ message: "User not found" });
       }
-      // No devolver la contraseña
+      // Don't return password
       const { password, ...userWithoutPassword } = updatedUser;
       return res.json(userWithoutPassword);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ errors: error.errors });
       }
-      console.error("Error al actualizar usuario:", error);
-      return res.status(500).json({ message: "Error al actualizar el usuario" });
+      console.error("Error updating user:", error);
+      return res.status(500).json({ message: "Error updating the user" });
     }
   });
 
@@ -118,20 +118,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = parseInt(req.params.id);
       
-      // No permitir que un usuario se elimine a sí mismo
+      // Don't allow a user to delete their own account
       if (userId === req.user.id) {
-        return res.status(400).json({ message: "No puedes eliminar tu propia cuenta" });
+        return res.status(400).json({ message: "You cannot delete your own account" });
       }
       
       const deletedUser = await storage.deleteUser(userId);
       if (!deletedUser) {
-        return res.status(404).json({ message: "Usuario no encontrado" });
+        return res.status(404).json({ message: "User not found" });
       }
       
-      return res.json({ message: "Usuario eliminado correctamente" });
+      return res.json({ message: "User successfully deleted" });
     } catch (error) {
-      console.error("Error al eliminar usuario:", error);
-      return res.status(500).json({ message: "Error al eliminar el usuario" });
+      console.error("Error deleting user:", error);
+      return res.status(500).json({ message: "Error deleting the user" });
     }
   });
 
