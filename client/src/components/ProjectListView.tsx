@@ -75,7 +75,7 @@ export default function ProjectListView({ projects, isLoading, onProjectClick }:
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search projects..."
+            placeholder="Buscar proyectos..."
             className="pl-8"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -84,12 +84,12 @@ export default function ProjectListView({ projects, isLoading, onProjectClick }:
         <div className="flex items-center gap-2">
           {(searchTerm || priorityFilter || statusFilter) && (
             <Button variant="ghost" size="sm" onClick={resetFilters}>
-              Clear filters
+              Limpiar filtros
             </Button>
           )}
           <Button variant="outline" size="sm">
             <Filter className="mr-1 h-4 w-4" />
-            Filters
+            Filtros
           </Button>
         </div>
       </div>
@@ -98,42 +98,75 @@ export default function ProjectListView({ projects, isLoading, onProjectClick }:
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Priority</TableHead>
-              <TableHead>Client</TableHead>
-              <TableHead>Visit Date</TableHead>
-              <TableHead>Address</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="hidden md:table-cell">Proyecto</TableHead>
+              <TableHead className="md:hidden">Proyecto/Estado</TableHead>
+              <TableHead className="hidden md:table-cell">Estado</TableHead>
+              <TableHead className="hidden md:table-cell">Prioridad</TableHead>
+              <TableHead className="hidden md:table-cell">Cliente</TableHead>
+              <TableHead className="hidden md:table-cell">Fecha Visita</TableHead>
+              <TableHead className="hidden md:table-cell">Dirección</TableHead>
+              <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8">
-                  Loading projects...
+                  <div className="flex justify-center items-center">
+                    <svg className="animate-spin h-5 w-5 mr-3 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Cargando proyectos...
+                  </div>
                 </TableCell>
               </TableRow>
             ) : filteredProjects.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8">
-                  No projects found
-                  {searchTerm && ` matching "${searchTerm}"`}
-                  {(priorityFilter || statusFilter) && " with the selected filters"}
+                  No se encontraron proyectos
+                  {searchTerm && ` que coincidan con "${searchTerm}"`}
+                  {(priorityFilter || statusFilter) && " con los filtros seleccionados"}
                 </TableCell>
               </TableRow>
             ) : (
               filteredProjects.map((project) => (
                 <TableRow key={project.id}>
                   <TableCell className="font-medium">
-                    {project.title}
-                    {project.description && (
-                      <p className="text-sm text-muted-foreground truncate max-w-xs">
-                        {project.description}
-                      </p>
-                    )}
+                    <div className="flex flex-col">
+                      <span>{project.title}</span>
+                      {project.description && (
+                        <p className="text-sm text-muted-foreground truncate max-w-xs hidden md:block">
+                          {project.description}
+                        </p>
+                      )}
+                      
+                      {/* Mobile-only content */}
+                      <div className="md:hidden mt-1 flex flex-col space-y-1">
+                        <Badge 
+                          className={cn(
+                            "px-2 py-1 inline-flex w-fit", 
+                            statusColors[project.status as ProjectStatus] || "bg-gray-100"
+                          )}
+                        >
+                          {statusNames[project.status as ProjectStatus] || project.status}
+                        </Badge>
+
+                        <div className="flex items-center text-xs text-muted-foreground">
+                          <span className="font-medium mr-1">Cliente:</span> 
+                          {project.client?.name || "-"}
+                        </div>
+                      
+                        <div className="flex items-center text-xs text-muted-foreground">
+                          <span className="font-medium mr-1">Visita:</span> 
+                          {formatDate(project.visitDate)}
+                        </div>
+                      </div>
+                    </div>
                   </TableCell>
-                  <TableCell>
+                  
+                  {/* Desktop-only columns */}
+                  <TableCell className="hidden md:table-cell">
                     <Badge 
                       className={cn(
                         "px-2 py-1", 
@@ -143,7 +176,7 @@ export default function ProjectListView({ projects, isLoading, onProjectClick }:
                       {statusNames[project.status as ProjectStatus] || project.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <Badge 
                       variant="outline" 
                       className={cn(
@@ -153,12 +186,14 @@ export default function ProjectListView({ projects, isLoading, onProjectClick }:
                         "text-blue-600 border-blue-300"
                       )}
                     >
-                      {project.priority || "Normal"}
+                      {project.priority === "high" ? "Alta" : 
+                       project.priority === "urgent" ? "Urgente" : 
+                       project.priority === "normal" ? "Normal" : "Normal"}
                     </Badge>
                   </TableCell>
-                  <TableCell>{project.client?.name || "-"}</TableCell>
-                  <TableCell>{formatDate(project.visitDate)}</TableCell>
-                  <TableCell className="truncate max-w-xs">
+                  <TableCell className="hidden md:table-cell">{project.client?.name || "-"}</TableCell>
+                  <TableCell className="hidden md:table-cell">{formatDate(project.visitDate)}</TableCell>
+                  <TableCell className="hidden md:table-cell truncate max-w-xs">
                     {project.address || "-"}
                   </TableCell>
                   <TableCell className="text-right">
@@ -169,7 +204,7 @@ export default function ProjectListView({ projects, isLoading, onProjectClick }:
                       onClick={() => onProjectClick(project)}
                     >
                       <Eye className="h-4 w-4" />
-                      <span className="sr-only">View details</span>
+                      <span className="sr-only">Ver detalles</span>
                     </Button>
                   </TableCell>
                 </TableRow>

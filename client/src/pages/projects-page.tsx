@@ -43,7 +43,7 @@ export default function ProjectsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div className="flex items-center">
           <GitBranch className="h-8 w-8 text-blue-600 mr-3" />
-          <h2 className="text-2xl md:text-3xl font-bold">Projects</h2>
+          <h2 className="text-2xl md:text-3xl font-bold">Proyectos</h2>
         </div>
         
         <div className="flex items-center space-x-2">
@@ -54,7 +54,7 @@ export default function ProjectsPage() {
             className="flex items-center"
           >
             <RefreshCw className="h-4 w-4 mr-1" />
-            Refresh
+            Actualizar
           </Button>
           
           <Button 
@@ -62,7 +62,7 @@ export default function ProjectsPage() {
             className="flex items-center"
           >
             <Plus className="h-4 w-4 mr-1" />
-            New Project
+            Nuevo Proyecto
           </Button>
         </div>
       </div>
@@ -71,9 +71,9 @@ export default function ProjectsPage() {
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center justify-between">
             <div>
-              <CardTitle>Projects Management</CardTitle>
+              <CardTitle>Gestión de Proyectos</CardTitle>
               <CardDescription>
-                View and manage all painting projects.
+                Ver y administrar todos los proyectos de pintura.
               </CardDescription>
             </div>
             <Tabs 
@@ -84,11 +84,11 @@ export default function ProjectsPage() {
               <TabsList>
                 <TabsTrigger value="kanban" className="flex items-center">
                   <AlignLeft className="h-4 w-4 mr-1" />
-                  Kanban
+                  Tablero
                 </TabsTrigger>
                 <TabsTrigger value="list" className="flex items-center">
                   <ClipboardList className="h-4 w-4 mr-1" />
-                  List
+                  Lista
                 </TabsTrigger>
               </TabsList>
             </Tabs>
