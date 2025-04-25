@@ -32,23 +32,24 @@ interface NewServiceOrderModalProps {
   onClose: () => void;
 }
 
-export function NewServiceOrderModal({ isOpen, onClose }: NewServiceOrderModalProps) {
+export default function NewServiceOrderModal({ isOpen, onClose }: NewServiceOrderModalProps) {
   const { toast } = useToast();
   const [isGeneratingOrderNumber, setIsGeneratingOrderNumber] = useState(false);
   
   // Cargar proyectos que estén aprobados o en progreso
-  const { data: projectsData, isLoading: isLoadingProjects } = useQuery<ProjectWithClient[]>({
+  const { data: projectsData, isLoading: isLoadingProjects } = useQuery<{projects: ProjectWithClient[]}>({
     queryKey: ['/api/projects'],
     select: (data) => {
-      if (!data || !data.projects) return [];
+      if (!data || !data.projects) return { projects: [] };
       // Filtrar solo proyectos con cotizaciones aprobadas o en progreso
-      return data.projects.filter(project => 
+      const filteredProjects = data.projects.filter((project: ProjectWithClient) => 
         ['quote_approved', 'in_preparation', 'in_progress'].includes(project.status)
       );
+      return { projects: filteredProjects };
     }
   });
   
-  const projects = projectsData || [];
+  const projects: ProjectWithClient[] = projectsData?.projects || [];
   
   // Configurar el formulario
   const form = useForm<FormValues>({

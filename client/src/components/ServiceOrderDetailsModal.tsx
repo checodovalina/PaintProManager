@@ -16,7 +16,7 @@ interface ServiceOrderDetailsModalProps {
   onClose: () => void;
 }
 
-export function ServiceOrderDetailsModal({ order, isOpen, onClose }: ServiceOrderDetailsModalProps) {
+export default function ServiceOrderDetailsModal({ order, isOpen, onClose }: ServiceOrderDetailsModalProps) {
   const { toast } = useToast();
   const isMobile = useMobile();
   

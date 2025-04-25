@@ -13,7 +13,7 @@ interface ServiceOrderListProps {
   onViewOrder: (order: ServiceOrder) => void;
 }
 
-export function ServiceOrderList({ orders, isLoading, onViewOrder }: ServiceOrderListProps) {
+export default function ServiceOrderList({ orders, isLoading, onViewOrder }: ServiceOrderListProps) {
   const isMobile = useMobile();
   
   const formatDate = (dateString: string | null | undefined) => {

@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Clipboard, Plus, RefreshCw } from "lucide-react";
 import { useMobile } from "@/hooks/use-mobile";
 import { ServiceOrder } from "@shared/schema";
-import { ServiceOrderList } from "@/components/ServiceOrderList";
-import { NewServiceOrderModal } from "@/components/NewServiceOrderModal";
-import { ServiceOrderDetailsModal } from "@/components/ServiceOrderDetailsModal";
+import ServiceOrderList from "@/components/ServiceOrderList";
+import NewServiceOrderModal from "@/components/NewServiceOrderModal";
+import ServiceOrderDetailsModal from "@/components/ServiceOrderDetailsModal";
 
 export default function OrdersPage() {
   const [isNewOrderModalOpen, setIsNewOrderModalOpen] = useState(false);
