@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import { useMobile } from "@/hooks/use-mobile";
@@ -18,6 +18,13 @@ export default function Layout({ children }: LayoutProps) {
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
+  
+  // Cerrar automáticamente el menú cuando cambie la ruta en dispositivos móviles
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  }, [location, isMobile]);
 
   // If we're on the auth page, only show the main content
   if (location === "/auth") {

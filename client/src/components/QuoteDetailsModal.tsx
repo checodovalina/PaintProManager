@@ -80,6 +80,16 @@ export default function QuoteDetailsModal({
   const handleDownloadPDF = () => {
     console.log("Print quote:", quote);
     
+    // Detectar si es un dispositivo móvil para enviar los datos al servidor (implementación futura)
+    if (isMobile) {
+      toast({
+        title: "Información",
+        description: "La generación de PDF en dispositivos móviles no está disponible actualmente. Por favor, utiliza un navegador de escritorio para esta función.",
+        variant: "default",
+      });
+      return;
+    }
+    
     try {
       // Función para sanitizar texto y evitar errores
       const sanitizeText = (text: string | null | undefined): string => {
@@ -289,8 +299,8 @@ export default function QuoteDetailsModal({
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Desglose de Costos</h3>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
+            <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
+              <div className={`space-y-1 ${isMobile ? 'pb-2' : ''}`}>
                 <p className="text-sm font-medium">Costo de Materiales</p>
                 <p className="text-lg">{formatCurrency(Number(quote.materialsCost))}</p>
               </div>
@@ -301,8 +311,8 @@ export default function QuoteDetailsModal({
               </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
+            <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
+              <div className={`space-y-1 ${isMobile ? 'pb-2' : ''}`}>
                 <p className="text-sm font-medium">Costos Adicionales</p>
                 <p className="text-lg">{formatCurrency(Number(quote.additionalCosts))}</p>
               </div>

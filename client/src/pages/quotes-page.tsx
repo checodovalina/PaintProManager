@@ -6,6 +6,7 @@ import { FileText, Plus, CalculatorIcon, RefreshCw } from "lucide-react";
 import QuoteList from "@/components/QuoteList";
 import NewQuoteModal from "@/components/NewQuoteModal";
 import QuoteDetailsModal from "@/components/QuoteDetailsModal";
+import { useMobile } from "@/hooks/use-mobile";
 import { Quote } from "@shared/schema";
 import { QuoteWithRelations } from "@/lib/extended-types";
 
@@ -30,15 +31,18 @@ export default function QuotesPage() {
     window.print();
   };
 
+  // Detectar si es un dispositivo móvil
+  const isMobile = useMobile();
+  
   return (
-    <div className="container mx-auto py-6 md:py-10 px-4">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div className="container mx-auto py-6 md:py-10 px-2 md:px-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-6">
         <div className="flex items-center">
-          <FileText className="h-8 w-8 text-blue-600 mr-3" />
-          <h2 className="text-2xl md:text-3xl font-bold">Cotizaciones</h2>
+          <FileText className="h-8 w-8 text-blue-600 mr-2" />
+          <h2 className="text-xl md:text-3xl font-bold">Cotizaciones</h2>
         </div>
         
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 mt-2 md:mt-0">
           <Button 
             onClick={() => refetch()} 
             variant="outline" 
@@ -46,15 +50,16 @@ export default function QuotesPage() {
             className="flex items-center"
           >
             <RefreshCw className="h-4 w-4 mr-1" />
-            Actualizar
+            {isMobile ? "" : "Actualizar"}
           </Button>
           
           <Button 
             onClick={() => setIsNewQuoteModalOpen(true)}
             className="flex items-center"
+            size={isMobile ? "sm" : "default"}
           >
             <Plus className="h-4 w-4 mr-1" />
-            Nueva Cotización
+            {isMobile ? "Nueva" : "Nueva Cotización"}
           </Button>
         </div>
       </div>
