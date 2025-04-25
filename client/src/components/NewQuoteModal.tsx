@@ -77,7 +77,7 @@ export default function NewQuoteModal({
   }, [isOpen]);
 
   // Fetch projects
-  const { data: projectsData } = useQuery({
+  const { data: projectsData } = useQuery<{ projects: Project[] }>({
     queryKey: ['/api/projects'],
     enabled: isOpen
   });
