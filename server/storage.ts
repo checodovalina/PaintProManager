@@ -290,12 +290,12 @@ export const storage = {
     if (data.isProspect && !data.nextFollowUp) {
       const nextDay = new Date();
       nextDay.setDate(nextDay.getDate() + 7); // Seguimiento en 7 días por defecto
-      data.nextFollowUp = nextDay;
+      data.nextFollowUp = nextDay.toISOString();
     }
     
     // Establecer la fecha de último contacto a hoy si no se especifica
     if (!data.lastContactDate) {
-      data.lastContactDate = new Date();
+      data.lastContactDate = new Date().toISOString();
     }
     
     const [client] = await db.insert(clients).values(data).returning();
