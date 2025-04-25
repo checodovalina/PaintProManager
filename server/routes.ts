@@ -25,7 +25,7 @@ const checkRole = (roles: string[]) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
     
-    if (!roles.includes(req.user.role)) {
+    if (req.user && req.user.role && !roles.includes(req.user.role)) {
       return res.status(403).json({ message: "You don't have permission to perform this action" });
     }
     
@@ -90,7 +90,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch(`${apiPrefix}/users/:id`, checkRole(['superadmin', 'admin']), async (req, res) => {
     try {
       // Only superadmin can modify another superadmin
-      if (req.user.role !== 'superadmin') {
+      if (req.user && req.user.role !== 'superadmin') {
         const userToUpdate = await storage.getUser(parseInt(req.params.id));
         if (userToUpdate && userToUpdate.role === 'superadmin') {
           return res.status(403).json({ message: "You don't have permission to modify a superadmin" });
@@ -119,7 +119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = parseInt(req.params.id);
       
       // Don't allow a user to delete their own account
-      if (userId === req.user.id) {
+      if (req.user && userId === req.user.id) {
         return res.status(400).json({ message: "You cannot delete your own account" });
       }
       

@@ -439,9 +439,32 @@ export const storage = {
     });
   },
   
+  async getPersonnelById(id: number) {
+    return db.query.personnel.findFirst({
+      where: eq(personnel.id, id)
+    });
+  },
+  
   async createPersonnel(data: PersonnelInsert) {
     const [person] = await db.insert(personnel).values(data).returning();
     return person;
+  },
+  
+  async updatePersonnel(id: number, data: Partial<PersonnelInsert>) {
+    const [updated] = await db
+      .update(personnel)
+      .set(data)
+      .where(eq(personnel.id, id))
+      .returning();
+    return updated;
+  },
+  
+  async deletePersonnel(id: number) {
+    const [deleted] = await db
+      .delete(personnel)
+      .where(eq(personnel.id, id))
+      .returning();
+    return deleted;
   },
   
   // Quote operations
@@ -560,7 +583,7 @@ export const storage = {
     const [order] = await db
       .update(serviceOrders)
       .set({
-        startedAt: new Date().toISOString(),
+        startedAt: new Date(),
         startSignature: startSignature || null
       })
       .where(eq(serviceOrders.id, id))
@@ -584,7 +607,7 @@ export const storage = {
     const [order] = await db
       .update(serviceOrders)
       .set({
-        completedAt: new Date().toISOString(),
+        completedAt: new Date(),
         endSignature: endSignature || null
       })
       .where(eq(serviceOrders.id, id))
