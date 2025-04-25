@@ -1,4 +1,4 @@
-import { Quote, Project, Client } from "@shared/schema";
+import { Quote, Project, Client, ServiceOrder } from "@shared/schema";
 
 // Extendido para incluir relaciones
 export interface QuoteWithRelations extends Quote {
@@ -7,4 +7,8 @@ export interface QuoteWithRelations extends Quote {
 
 export interface ProjectWithClient extends Project {
   client?: Client;
+}
+
+export interface ServiceOrderWithRelations extends ServiceOrder {
+  project?: ProjectWithClient;
 }
