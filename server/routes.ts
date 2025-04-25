@@ -358,6 +358,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: "Failed to create personnel" });
     }
   });
+  
+  app.get(`${apiPrefix}/personnel/:id`, async (req, res) => {
+    try {
+      const personnel = await storage.getPersonnelById(parseInt(req.params.id));
+      if (!personnel) {
+        return res.status(404).json({ message: "Personnel not found" });
+      }
+      return res.json(personnel);
+    } catch (error) {
+      console.error("Error fetching personnel:", error);
+      return res.status(500).json({ message: "Failed to fetch personnel details" });
+    }
+  });
+  
+  app.patch(`${apiPrefix}/personnel/:id`, async (req, res) => {
+    try {
+      const validatedData = personnelInsertSchema.partial().parse(req.body);
+      const updatedPersonnel = await storage.updatePersonnel(parseInt(req.params.id), validatedData);
+      if (!updatedPersonnel) {
+        return res.status(404).json({ message: "Personnel not found" });
+      }
+      return res.json(updatedPersonnel);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ errors: error.errors });
+      }
+      console.error("Error updating personnel:", error);
+      return res.status(500).json({ message: "Failed to update personnel" });
+    }
+  });
+  
+  app.delete(`${apiPrefix}/personnel/:id`, async (req, res) => {
+    try {
+      const personnelId = parseInt(req.params.id);
+      
+      // Verificar si el personal tiene asignaciones a proyectos
+      const personnel = await storage.getPersonnelById(personnelId);
+      if (!personnel) {
+        return res.status(404).json({ message: "Personnel not found" });
+      }
+      
+      // Si existe alguna restricción de integridad (como proyectos asignados), lo verificaríamos aquí
+      
+      const deletedPersonnel = await storage.deletePersonnel(personnelId);
+      return res.json({
+        message: "Personnel successfully deleted",
+        personnel: deletedPersonnel
+      });
+    } catch (error) {
+      console.error("Error deleting personnel:", error);
+      return res.status(500).json({ message: "Failed to delete personnel" });
+    }
+  });
 
   // Quotes
   app.get(`${apiPrefix}/quotes`, async (req, res) => {
