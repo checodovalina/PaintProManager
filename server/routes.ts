@@ -370,6 +370,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get(`${apiPrefix}/quotes/:id`, async (req, res) => {
+    try {
+      const quote = await storage.getQuoteById(parseInt(req.params.id));
+      if (!quote) {
+        return res.status(404).json({ message: "Quote not found" });
+      }
+      return res.json(quote);
+    } catch (error) {
+      console.error("Error fetching quote:", error);
+      return res.status(500).json({ message: "Failed to fetch quote details" });
+    }
+  });
+
   app.post(`${apiPrefix}/quotes`, async (req, res) => {
     try {
       if (!req.isAuthenticated() || !req.user) {
@@ -378,6 +391,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const validatedData = quotesInsertSchema.parse(req.body);
       const newQuote = await storage.createQuote(validatedData, req.user.id);
+      
+      // Create an activity for the new quote
+      await storage.createActivity({
+        title: `Nueva cotización creada`,
+        description: `Cotización #${newQuote.quoteNumber} creada para el proyecto #${newQuote.projectId}`,
+        type: "info",
+        relatedId: newQuote.id,
+        relatedType: "quote",
+        createdBy: req.user.id
+      });
+      
       return res.status(201).json(newQuote);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -385,6 +409,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Error creating quote:", error);
       return res.status(500).json({ message: "Failed to create quote" });
+    }
+  });
+  
+  app.patch(`${apiPrefix}/quotes/:id/approve`, async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const quoteId = parseInt(req.params.id);
+      const updatedQuote = await storage.approveQuote(quoteId);
+      
+      if (!updatedQuote) {
+        return res.status(404).json({ message: "Quote not found" });
+      }
+      
+      // Update the project status to 'quote_approved'
+      await storage.updateProjectStatus(updatedQuote.projectId, 'quote_approved');
+      
+      // Create an activity for the approval
+      await storage.createActivity({
+        title: `Cotización aprobada`,
+        description: `Cotización #${updatedQuote.quoteNumber} aprobada por cliente`,
+        type: "contract",
+        relatedId: updatedQuote.id,
+        relatedType: "quote",
+        createdBy: req.user.id
+      });
+      
+      return res.json(updatedQuote);
+    } catch (error) {
+      console.error("Error approving quote:", error);
+      return res.status(500).json({ message: "Failed to approve quote" });
     }
   });
 
