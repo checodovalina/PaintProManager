@@ -87,9 +87,27 @@ export default function ClientForm({ defaultValues, onSubmit, isSubmitting }: Cl
     }
   });
 
+  // Añadimos un manejador personalizado para convertir fechas a strings antes de enviar
+  const handleSubmit = (values: FormValues) => {
+    // Crear una copia de los valores para no mutar el objeto original
+    const processedValues = { ...values };
+    
+    // Convertir fechas a formato string para la API
+    if (processedValues.lastContactDate instanceof Date) {
+      processedValues.lastContactDate = processedValues.lastContactDate.toISOString().split('T')[0];
+    }
+    
+    if (processedValues.nextFollowUp instanceof Date) {
+      processedValues.nextFollowUp = processedValues.nextFollowUp.toISOString().split('T')[0];
+    }
+    
+    // Llamar al onSubmit original con los valores procesados
+    onSubmit(processedValues);
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}

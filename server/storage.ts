@@ -338,12 +338,6 @@ export const storage = {
     
     // Convertir fechas tipo Date a string para PostgreSQL
     let updatedData = { ...data };
-    if (updatedData.lastContactDate instanceof Date) {
-      updatedData.lastContactDate = updatedData.lastContactDate.toISOString().split('T')[0];
-    }
-    if (updatedData.nextFollowUp instanceof Date) {
-      updatedData.nextFollowUp = updatedData.nextFollowUp.toISOString().split('T')[0];
-    }
     
     const [updatedClient] = await db
       .update(clients)
@@ -414,9 +408,25 @@ export const storage = {
   },
   
   async updateProjectStatus(id: number, status: string) {
+    // Validamos que el status sea uno de los valores permitidos
+    const validStatuses = [
+      "pending_visit", 
+      "quote_sent", 
+      "quote_approved", 
+      "in_preparation", 
+      "in_progress", 
+      "final_review", 
+      "completed", 
+      "archived"
+    ];
+    
+    if (!validStatuses.includes(status)) {
+      throw new Error(`Invalid project status: ${status}. Must be one of: ${validStatuses.join(', ')}`);
+    }
+    
     const [updatedProject] = await db
       .update(projects)
-      .set({ status })
+      .set({ status: status as any }) // utilizamos type assertion
       .where(eq(projects.id, id))
       .returning();
     return updatedProject;
