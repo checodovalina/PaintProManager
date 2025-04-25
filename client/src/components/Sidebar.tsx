@@ -60,10 +60,11 @@ export default function Sidebar({ open, toggleSidebar }: SidebarProps) {
     <div 
       className={`${isMobile ? 'fixed inset-y-0 left-0 z-50' : 'flex-shrink-0'} ${
         open ? 'block' : 'hidden'
-      } md:block`}
+      } md:block shadow-lg`}
+      style={{ maxWidth: isMobile ? '80%' : '300px' }}
     >
-      <div className="flex flex-col w-64 h-full bg-slate-900 text-white">
-        {/* Logo */}
+      <div className="flex flex-col w-full h-full bg-slate-900 text-white">
+        {/* Logo & Header */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-700">
           <div className="flex items-center">
             <img 

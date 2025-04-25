@@ -1,18 +1,22 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Project, ProjectStatus } from "@/lib/types";
+import { useMobile } from "@/hooks/use-mobile";
+import { Loader2 } from "lucide-react";
 
 interface ProjectDetailsModalProps {
   project: Project;
@@ -34,19 +38,21 @@ const statusColors: Record<ProjectStatus, string> = {
 
 // Map for status display names
 const statusNames: Record<ProjectStatus, string> = {
-  pending_visit: "Pending Visit",
-  quote_sent: "Quote Sent",
-  quote_approved: "Quote Approved",
-  in_preparation: "In Preparation",
-  in_progress: "In Progress",
-  final_review: "Final Review",
-  completed: "Completed",
-  archived: "Archived",
+  pending_visit: "Visita Pendiente",
+  quote_sent: "Cotización Enviada",
+  quote_approved: "Cotización Aprobada",
+  in_preparation: "En Preparación",
+  in_progress: "En Progreso",
+  final_review: "Revisión Final",
+  completed: "Completado",
+  archived: "Archivado",
 };
 
 export default function ProjectDetailsModal({ project, isOpen, onClose }: ProjectDetailsModalProps) {
   const [activeTab, setActiveTab] = useState("details");
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const isMobile = useMobile();
 
   // Fetch full project details including relations
   const { data: projectDetails, isLoading } = useQuery({
@@ -62,17 +68,31 @@ export default function ProjectDetailsModal({ project, isOpen, onClose }: Projec
 
   // Mutation to update project status
   const updateStatusMutation = useMutation({
-    mutationFn: (status: ProjectStatus) => {
-      return apiRequest(
+    mutationFn: async (status: ProjectStatus) => {
+      const response = await apiRequest(
         "PATCH",
         `/api/projects/${project.id}/status`,
         { status }
       );
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
       queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/activities'] });
+      toast({
+        title: "Estado actualizado",
+        description: "El estado del proyecto ha sido actualizado correctamente",
+      });
     },
+    onError: (error: Error) => {
+      toast({
+        title: "Error al actualizar estado",
+        description: error.message || "Ha ocurrido un error al actualizar el estado del proyecto",
+        variant: "destructive",
+      });
+    }
   });
 
   // Handle status change
@@ -82,22 +102,25 @@ export default function ProjectDetailsModal({ project, isOpen, onClose }: Projec
 
   // Format date to readable string
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return "Not set";
+    if (!dateString) return "No establecido";
     return new Date(dateString).toLocaleDateString();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className={`${isMobile ? 'max-w-[95vw] p-4' : 'max-w-3xl p-6'}`}>
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold flex items-center justify-between">
-            <span>{project.title}</span>
+          <DialogTitle className="text-xl font-semibold flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+            <span className="break-words">{project.title}</span>
             <Badge 
-              className={statusColors[project.status as ProjectStatus] || "bg-gray-100"}
+              className={`${statusColors[project.status as ProjectStatus] || "bg-gray-100"} inline-block`}
             >
               {statusNames[project.status as ProjectStatus] || project.status}
             </Badge>
           </DialogTitle>
+          <DialogDescription>
+            {clientDetails?.name ? `Cliente: ${clientDetails.name}` : 'Cargando detalles...'}
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs 
@@ -106,115 +129,131 @@ export default function ProjectDetailsModal({ project, isOpen, onClose }: Projec
           onValueChange={setActiveTab}
           className="mt-4"
         >
-          <TabsList className="grid grid-cols-4 mb-4">
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="quotes">Quotes</TabsTrigger>
-            <TabsTrigger value="team">Team</TabsTrigger>
-            <TabsTrigger value="images">Images</TabsTrigger>
+          <TabsList className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-4'} mb-4`}>
+            <TabsTrigger value="details">Detalles</TabsTrigger>
+            <TabsTrigger value="quotes">Cotizaciones</TabsTrigger>
+            {isMobile ? null : <TabsTrigger value="team">Equipo</TabsTrigger>}
+            {isMobile ? null : <TabsTrigger value="images">Imágenes</TabsTrigger>}
+            {isMobile ? <TabsTrigger value="team">Equipo</TabsTrigger> : null}
+            {isMobile ? <TabsTrigger value="images">Imágenes</TabsTrigger> : null}
           </TabsList>
 
           <TabsContent value="details" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Description</h3>
-                <p className="mt-1">{project.description || "No description available"}</p>
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
               </div>
-              
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Client</h3>
-                <p className="mt-1 font-medium">{clientDetails?.name || "Loading..."}</p>
-                {clientDetails && (
-                  <div className="mt-1 text-sm text-gray-500">
-                    <p>{clientDetails.email}</p>
-                    <p>{clientDetails.phone}</p>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Descripción</h3>
+                    <p className="mt-1">{project.description || "Sin descripción disponible"}</p>
                   </div>
-                )}
-              </div>
-            </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Cliente</h3>
+                    <p className="mt-1 font-medium">{clientDetails?.name || "Cargando..."}</p>
+                    {clientDetails && (
+                      <div className="mt-1 text-sm text-gray-500">
+                        {clientDetails.email && <p>Email: {clientDetails.email}</p>}
+                        {clientDetails.phone && <p>Teléfono: {clientDetails.phone}</p>}
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-            <Separator />
+                <Separator />
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Visit Date</h3>
-                <p className="mt-1">{formatDate(project.visitDate)}</p>
-              </div>
-              
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Start Date</h3>
-                <p className="mt-1">{formatDate(project.startDate)}</p>
-              </div>
-              
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">End Date</h3>
-                <p className="mt-1">{formatDate(project.endDate)}</p>
-              </div>
-              
-              <div>
-                <h3 className="text-sm font-medium text-gray-500">Priority</h3>
-                <p className="mt-1 capitalize">{project.priority || "Normal"}</p>
-              </div>
-            </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Fecha de Visita</h3>
+                    <p className="mt-1">{formatDate(project.visitDate)}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Fecha de Inicio</h3>
+                    <p className="mt-1">{formatDate(project.startDate)}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Fecha Final</h3>
+                    <p className="mt-1">{formatDate(project.endDate)}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500">Prioridad</h3>
+                    <p className="mt-1 capitalize">
+                      {project.priority === 'normal' ? 'Normal' : 
+                      project.priority === 'high' ? 'Alta' : 
+                      project.priority === 'urgent' ? 'Urgente' : 'Normal'}
+                    </p>
+                  </div>
+                </div>
 
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Address</h3>
-              <p className="mt-1">{project.address || "No address provided"}</p>
-            </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Dirección</h3>
+                  <p className="mt-1">{project.address || "Sin dirección"}</p>
+                </div>
 
-            <div>
-              <h3 className="text-sm font-medium text-gray-500">Notes</h3>
-              <p className="mt-1">{project.notes || "No notes available"}</p>
-            </div>
-            
-            <Separator />
-            
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-2">Update Status</h3>
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(statusNames).map(([key, name]) => (
-                  <Button
-                    key={key}
-                    size="sm"
-                    variant={project.status === key ? "default" : "outline"}
-                    className="text-xs"
-                    onClick={() => handleStatusChange(key as ProjectStatus)}
-                    disabled={updateStatusMutation.isPending}
-                  >
-                    {name}
-                  </Button>
-                ))}
-              </div>
-            </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Notas</h3>
+                  <p className="mt-1">{project.notes || "Sin notas disponibles"}</p>
+                </div>
+                
+                <Separator />
+                
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 mb-2">Actualizar Estado</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(statusNames).map(([key, name]) => (
+                      <Button
+                        key={key}
+                        size="sm"
+                        variant={project.status === key ? "default" : "outline"}
+                        className="text-xs"
+                        onClick={() => handleStatusChange(key as ProjectStatus)}
+                        disabled={updateStatusMutation.isPending}
+                      >
+                        {name}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </TabsContent>
 
-          <TabsContent value="quotes" className="space-y-4">
+          <TabsContent value="quotes" className="space-y-4 min-h-[200px]">
             {isLoading ? (
-              <p>Loading quotes...</p>
-            ) : projectDetails?.quotes?.length > 0 ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              </div>
+            ) : projectDetails && 'quotes' in projectDetails && Array.isArray(projectDetails.quotes) && projectDetails.quotes.length > 0 ? (
               <div className="space-y-4">
                 {projectDetails.quotes.map((quote: any) => (
                   <div key={quote.id} className="border rounded-md p-4">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="font-medium">Quote #{quote.quoteNumber}</h3>
+                        <h3 className="font-medium">Cotización #{quote.quoteNumber}</h3>
                         <p className="text-sm text-gray-500">
-                          Created: {new Date(quote.createdAt).toLocaleDateString()}
+                          Creado: {new Date(quote.createdAt).toLocaleDateString()}
                         </p>
                       </div>
-                      <Badge variant={quote.isApproved ? "success" : "outline"}>
-                        {quote.isApproved ? "Approved" : "Pending"}
+                      <Badge variant={quote.isApproved ? "default" : "outline"}>
+                        {quote.isApproved ? "Aprobado" : "Pendiente"}
                       </Badge>
                     </div>
                     
                     <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                       <div>
-                        <span className="text-gray-500">Materials:</span> ${quote.materialsCost}
+                        <span className="text-gray-500">Materiales:</span> ${quote.materialsCost}
                       </div>
                       <div>
-                        <span className="text-gray-500">Labor:</span> ${quote.laborCost}
+                        <span className="text-gray-500">Mano de obra:</span> ${quote.laborCost}
                       </div>
                       <div>
-                        <span className="text-gray-500">Additional:</span> ${quote.additionalCosts}
+                        <span className="text-gray-500">Adicionales:</span> ${quote.additionalCosts}
                       </div>
                       <div>
                         <span className="text-gray-500">Total:</span> <span className="font-bold">${quote.totalAmount}</span>
@@ -226,37 +265,39 @@ export default function ProjectDetailsModal({ project, isOpen, onClose }: Projec
                     )}
                     
                     <div className="mt-3 flex justify-end">
-                      <Button size="sm" variant="outline">View Details</Button>
+                      <Button size="sm" variant="outline">Ver Detalles</Button>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="text-center py-8">
-                <p className="text-gray-500">No quotes found for this project.</p>
-                <Button className="mt-4">Create Quote</Button>
+                <p className="text-gray-500">No hay cotizaciones para este proyecto.</p>
+                <Button className="mt-4">Crear Cotización</Button>
               </div>
             )}
           </TabsContent>
 
-          <TabsContent value="team" className="space-y-4">
+          <TabsContent value="team" className="space-y-4 min-h-[200px]">
             {isLoading ? (
-              <p>Loading team assignments...</p>
-            ) : projectDetails?.projectAssignments?.length > 0 ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              </div>
+            ) : projectDetails && 'projectAssignments' in projectDetails && Array.isArray(projectDetails.projectAssignments) && projectDetails.projectAssignments.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {projectDetails.projectAssignments.map((assignment: any) => (
                   <div key={assignment.id} className="border rounded-md p-4">
-                    <h3 className="font-medium">{assignment.personnel.name}</h3>
+                    <h3 className="font-medium">{assignment.personnel?.name || 'Personal'}</h3>
                     <p className="text-sm text-gray-500 capitalize">
-                      {assignment.personnel.type} • {assignment.personnel.specialty}
+                      {assignment.personnel?.type === 'employee' ? 'Empleado' : 'Subcontratista'} • {assignment.personnel?.specialty || 'Especialista'}
                     </p>
                     
                     <div className="mt-2 text-sm">
                       <div>
-                        <span className="text-gray-500">Start date:</span> {formatDate(assignment.startDate)}
+                        <span className="text-gray-500">Fecha inicio:</span> {formatDate(assignment.startDate)}
                       </div>
                       <div>
-                        <span className="text-gray-500">End date:</span> {formatDate(assignment.endDate)}
+                        <span className="text-gray-500">Fecha fin:</span> {formatDate(assignment.endDate)}
                       </div>
                     </div>
                     
@@ -268,33 +309,35 @@ export default function ProjectDetailsModal({ project, isOpen, onClose }: Projec
               </div>
             ) : (
               <div className="text-center py-8">
-                <p className="text-gray-500">No team members assigned to this project.</p>
-                <Button className="mt-4">Assign Team Members</Button>
+                <p className="text-gray-500">No hay personal asignado a este proyecto.</p>
+                <Button className="mt-4">Asignar Personal</Button>
               </div>
             )}
           </TabsContent>
 
-          <TabsContent value="images" className="space-y-4">
+          <TabsContent value="images" className="space-y-4 min-h-[200px]">
             {isLoading ? (
-              <p>Loading project images...</p>
-            ) : projectDetails?.projectImages?.length > 0 ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              </div>
+            ) : projectDetails && 'projectImages' in projectDetails && Array.isArray(projectDetails.projectImages) && projectDetails.projectImages.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {projectDetails.projectImages.map((image: any) => (
                   <div key={image.id} className="border rounded-md overflow-hidden">
                     <div className="aspect-video bg-gray-100 flex items-center justify-center">
                       <img 
                         src={image.imageUrl} 
-                        alt={image.caption || "Project image"} 
+                        alt={image.caption || "Imagen del proyecto"} 
                         className="object-cover w-full h-full"
                       />
                     </div>
                     <div className="p-3">
                       <div className="flex justify-between items-center">
                         <Badge variant="outline" className="capitalize">
-                          {image.type}
+                          {image.type || 'Foto'}
                         </Badge>
                         <span className="text-xs text-gray-500">
-                          {new Date(image.uploadedAt).toLocaleDateString()}
+                          {image.uploadedAt ? new Date(image.uploadedAt).toLocaleDateString() : 'Sin fecha'}
                         </span>
                       </div>
                       {image.caption && (
@@ -306,16 +349,16 @@ export default function ProjectDetailsModal({ project, isOpen, onClose }: Projec
               </div>
             ) : (
               <div className="text-center py-8">
-                <p className="text-gray-500">No images have been uploaded for this project.</p>
-                <Button className="mt-4">Upload Images</Button>
+                <p className="text-gray-500">No hay imágenes para este proyecto.</p>
+                <Button className="mt-4">Subir Imágenes</Button>
               </div>
             )}
           </TabsContent>
         </Tabs>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Close</Button>
-          <Button variant="default">Edit Project</Button>
+        <DialogFooter className="gap-2 mt-4">
+          <Button variant="outline" onClick={onClose}>Cerrar</Button>
+          <Button variant="default">Editar Proyecto</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

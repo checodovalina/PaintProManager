@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { ProjectPriority } from "@/lib/types";
 
 interface NewProjectModalProps {
   isOpen: boolean;
@@ -36,138 +39,163 @@ interface FormData {
   title: string;
   clientId: number;
   description: string;
-  visitDate: Date;
-  priority: "normal" | "high" | "urgent";
+  priority: ProjectPriority;
   address: string;
   notes?: string;
 }
 
 export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProps) {
-  const [date, setDate] = useState<Date>();
+  const [visitDate, setVisitDate] = useState<Date | undefined>();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Fetch clients for dropdown
-  const { data: clients } = useQuery({
+  const { data: clients = [] } = useQuery({
     queryKey: ['/api/clients'],
+    staleTime: 60000,
   });
 
-  const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<FormData>({
+  const { register, handleSubmit, formState: { errors, isValid }, reset, setValue } = useForm<FormData>({
     defaultValues: {
       title: "",
       clientId: 0,
       description: "",
       priority: "normal",
       address: "",
-      notes: ""
+      notes: "",
     }
   });
 
-  // Watch form fields for validation
-  const watchClientId = watch("clientId");
-  const watchTitle = watch("title");
-
   // Create project mutation
   const createProjectMutation = useMutation({
-    mutationFn: (data: FormData) => {
+    mutationFn: async (data: FormData) => {
       // Format the data for the API
       const apiData = {
         ...data,
         // Convert clientId to number if it's a string
         clientId: typeof data.clientId === 'string' ? parseInt(data.clientId) : data.clientId,
         // Format date to string "YYYY-MM-DD"
-        visitDate: date ? date.toISOString().split('T')[0] : null,
-        // Make sure priority matches the enum values
-        priority: data.priority.toLowerCase() as "normal" | "high" | "urgent",
+        visitDate: visitDate ? visitDate.toISOString().split('T')[0] : null,
         // Default status to pending_visit
         status: "pending_visit" as const,
-        // Get user ID from the current auth session
-        createdBy: 1, // Will be replaced by actual user ID in the backend
       };
       
-      return apiRequest("POST", "/api/projects", apiData);
+      const response = await apiRequest("POST", "/api/projects", apiData);
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
-      // Also update dashboard data and activities
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['/api/activities'] });
+      toast({
+        title: "Proyecto creado",
+        description: "El proyecto ha sido creado exitosamente",
+        variant: "default",
+      });
       onClose();
       reset();
+      setVisitDate(undefined);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error al crear proyecto",
+        description: error.message || "Hubo un error al crear el proyecto. Por favor intenta de nuevo.",
+        variant: "destructive",
+      });
     }
   });
 
   const onSubmit = (data: FormData) => {
+    if (!visitDate) {
+      toast({
+        title: "Fecha de visita requerida",
+        description: "Por favor selecciona una fecha de visita para el proyecto",
+        variant: "destructive",
+      });
+      return;
+    }
     createProjectMutation.mutate(data);
   };
 
+  const handleSelectChange = (value: string, field: keyof FormData) => {
+    setValue(field, value as any);
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) {
+        onClose();
+        reset();
+        setVisitDate(undefined);
+      }
+    }}>
+      <DialogContent className="sm:max-w-[500px] md:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle className="text-lg font-medium text-gray-900">Create New Project</DialogTitle>
+          <DialogTitle className="text-xl font-medium text-gray-900">Crear Nuevo Proyecto</DialogTitle>
+          <DialogDescription>
+            Completa los detalles para crear un nuevo proyecto
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="mt-4 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Project Title</Label>
+              <Label htmlFor="title">Título del Proyecto</Label>
               <Input 
                 id="title" 
-                placeholder="Project title or name" 
-                {...register("title", { required: true })}
+                placeholder="Título o nombre del proyecto" 
+                {...register("title", { required: "El título es requerido", minLength: { value: 5, message: "El título debe tener al menos 5 caracteres"} })}
               />
-              {errors.title && <p className="text-sm text-red-500">Title is required</p>}
+              {errors.title && <p className="text-sm text-red-500">{errors.title.message}</p>}
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="clientId">Client</Label>
-              <Select onValueChange={(value) => setValue("clientId", parseInt(value))} {...register("clientId", { required: true, valueAsNumber: true })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Search or select client" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {clients?.map((client: any) => (
-                      <SelectItem key={client.id} value={client.id.toString()}>
-                        {client.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              {errors.clientId && <p className="text-sm text-red-500">Client is required</p>}
+              <Label htmlFor="clientId">Cliente</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                {...register("clientId", { required: "El cliente es requerido", valueAsNumber: true })}
+              >
+                <option value="">Seleccionar cliente</option>
+                {clients.map((client: any) => (
+                  <option key={client.id} value={client.id}>
+                    {client.name}
+                  </option>
+                ))}
+              </select>
+              {errors.clientId && <p className="text-sm text-red-500">{errors.clientId.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Descripción</Label>
               <Textarea 
                 id="description" 
-                placeholder="Brief description of the project"
-                {...register("description", { required: true })}
+                placeholder="Breve descripción del proyecto"
+                className="min-h-[80px]"
+                {...register("description", { required: "La descripción es requerida", minLength: { value: 10, message: "La descripción debe tener al menos 10 caracteres" } })}
               />
-              {errors.description && <p className="text-sm text-red-500">Description is required</p>}
+              {errors.description && <p className="text-sm text-red-500">{errors.description.message}</p>}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="visitDate">Visit Date</Label>
+                <Label htmlFor="visitDate">Fecha de Visita</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant={"outline"}
                       className={cn(
                         "w-full justify-start text-left font-normal",
-                        !date && "text-muted-foreground"
+                        !visitDate && "text-muted-foreground"
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? format(date, "PPP") : <span>Pick a date</span>}
+                      {visitDate ? format(visitDate, "PPP") : <span>Seleccionar fecha</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
                     <Calendar
                       mode="single"
-                      selected={date}
-                      onSelect={setDate}
+                      selected={visitDate}
+                      onSelect={setVisitDate}
                       initialFocus
                     />
                   </PopoverContent>
@@ -175,44 +203,47 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="priority">Priority</Label>
-                <Select defaultValue="normal" onValueChange={(value) => setValue("priority", value as "normal" | "high" | "urgent")} {...register("priority")}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="normal">Normal</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="priority">Prioridad</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  {...register("priority", { required: "La prioridad es requerida" })}
+                >
+                  <option value="normal">Normal</option>
+                  <option value="high">Alta</option>
+                  <option value="urgent">Urgente</option>
+                </select>
+                {errors.priority && <p className="text-sm text-red-500">{errors.priority.message}</p>}
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
+              <Label htmlFor="address">Dirección</Label>
               <Input 
                 id="address" 
-                placeholder="Full address" 
-                {...register("address", { required: true })}
+                placeholder="Dirección completa" 
+                {...register("address", { required: "La dirección es requerida" })}
               />
-              {errors.address && <p className="text-sm text-red-500">Address is required</p>}
+              {errors.address && <p className="text-sm text-red-500">{errors.address.message}</p>}
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes (Optional)</Label>
+              <Label htmlFor="notes">Notas (Opcional)</Label>
               <Textarea 
                 id="notes" 
-                placeholder="Additional details or special instructions"
+                placeholder="Detalles adicionales o instrucciones especiales"
+                className="min-h-[60px]"
                 {...register("notes")}
               />
             </div>
           </div>
 
-          <DialogFooter className="mt-6">
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={createProjectMutation.isPending}>
-              {createProjectMutation.isPending ? "Creating..." : "Create Project"}
+          <DialogFooter className="mt-6 gap-2">
+            <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button 
+              type="submit" 
+              disabled={createProjectMutation.isPending}
+            >
+              {createProjectMutation.isPending ? "Creando..." : "Crear Proyecto"}
             </Button>
           </DialogFooter>
         </form>

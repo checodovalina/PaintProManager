@@ -27,14 +27,14 @@ const statusColors: Record<ProjectStatus, string> = {
 
 // Map for status display names
 const statusNames: Record<ProjectStatus, string> = {
-  pending_visit: "Pending Visit",
-  quote_sent: "Quote Sent",
-  quote_approved: "Quote Approved",
-  in_preparation: "In Preparation",
-  in_progress: "In Progress",
-  final_review: "Final Review",
-  completed: "Completed",
-  archived: "Archived",
+  pending_visit: "Visita Pendiente",
+  quote_sent: "Cotización Enviada",
+  quote_approved: "Cotización Aprobada",
+  in_preparation: "En Preparación",
+  in_progress: "En Progreso",
+  final_review: "Revisión Final",
+  completed: "Completado",
+  archived: "Archivado",
 };
 
 export default function ProjectListView({ projects, isLoading, onProjectClick }: ProjectListViewProps) {
