@@ -24,14 +24,16 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Layout>
-          <Router />
-        </Layout>
-        <Toaster />
-      </AuthProvider>
-    </QueryClientProvider>
+    <ThemeProvider defaultTheme="light" storageKey="dovalina-ui-theme">
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Layout>
+            <Router />
+          </Layout>
+          <Toaster />
+        </AuthProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 
