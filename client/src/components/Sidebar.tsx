@@ -68,18 +68,18 @@ export default function Sidebar({ open, toggleSidebar }: SidebarProps) {
         {/* Navigation Menu */}
         <nav className="flex-1 px-2 py-4 space-y-1">
           {navItems.map((item) => (
-            <Link key={item.path} href={item.path}>
-              <a
-                className={cn(
-                  "flex items-center px-4 py-2 text-sm font-medium rounded-md",
-                  location === item.path
-                    ? "bg-blue-600 text-white"
-                    : "text-gray-300 hover:bg-gray-700"
-                )}
-              >
-                <item.icon className="mr-3 h-5 w-5" />
-                {item.name}
-              </a>
+            <Link 
+              key={item.path} 
+              href={item.path}
+              className={cn(
+                "flex items-center px-4 py-2 text-sm font-medium rounded-md",
+                location === item.path
+                  ? "bg-blue-600 text-white"
+                  : "text-gray-300 hover:bg-gray-700"
+              )}
+            >
+              <item.icon className="mr-3 h-5 w-5" />
+              {item.name}
             </Link>
           ))}
         </nav>
