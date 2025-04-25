@@ -54,6 +54,20 @@ interface ClientFormProps {
 export default function ClientForm({ defaultValues, onSubmit, isSubmitting }: ClientFormProps) {
   const { user } = useAuth();
   
+  // Procesar valores por defecto para convertir fechas de string a Date
+  let processedDefaultValues = defaultValues;
+  if (processedDefaultValues) {
+    processedDefaultValues = {
+      ...processedDefaultValues,
+      lastContactDate: processedDefaultValues.lastContactDate 
+        ? new Date(processedDefaultValues.lastContactDate) 
+        : processedDefaultValues.lastContactDate,
+      nextFollowUp: processedDefaultValues.nextFollowUp 
+        ? new Date(processedDefaultValues.nextFollowUp) 
+        : processedDefaultValues.nextFollowUp
+    };
+  }
+  
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -69,7 +83,7 @@ export default function ClientForm({ defaultValues, onSubmit, isSubmitting }: Cl
       notes: "",
       lastContactDate: new Date(),
       nextFollowUp: new Date(new Date().setDate(new Date().getDate() + 7)),
-      ...defaultValues
+      ...processedDefaultValues
     }
   });
 

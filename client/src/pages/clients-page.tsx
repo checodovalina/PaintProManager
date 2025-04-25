@@ -158,11 +158,12 @@ export default function ClientsPage() {
   const handleFollowUp = (client: Client, notes: string, nextFollowUpDate: Date) => {
     const today = new Date();
     
+    // Transformamos las fechas a formato de cadena para evitar problemas de tipo
     updateClientMutation.mutate({
       id: client.id,
       client: {
-        lastContactDate: today,
-        nextFollowUp: nextFollowUpDate,
+        lastContactDate: today.toISOString().split('T')[0],
+        nextFollowUp: nextFollowUpDate.toISOString().split('T')[0],
         notes: notes ? `${today.toISOString().split('T')[0]}: ${notes}\n\n${client.notes || ''}` : client.notes
       }
     });
