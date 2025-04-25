@@ -80,33 +80,33 @@ export default function QuoteDetailsModal({
   const handleDownloadPDF = () => {
     console.log("Print quote:", quote);
     
-    // Detectar si es un dispositivo móvil para enviar los datos al servidor (implementación futura)
-    if (isMobile) {
-      toast({
-        title: "Información",
-        description: "La generación de PDF en dispositivos móviles no está disponible actualmente. Por favor, utiliza un navegador de escritorio para esta función.",
-        variant: "default",
-      });
-      return;
-    }
-    
+    // Definir funciones auxiliares dentro del bloque try
     try {
       // Función para sanitizar texto y evitar errores
       const sanitizeText = (text: string | null | undefined): string => {
         if (text === null || text === undefined) return "-";
-        return String(text).trim();
+        return String(text).replace(/[\n\r]+/g, " ").trim();
       };
       
-      // Inicializar el documento PDF
-      const doc = new jsPDF();
+      // Validaciones para evitar crash en jsPDF con valores nulos
+      if (!quote || !quote.quoteNumber) {
+        throw new Error("Datos de cotización incompletos");
+      }
+      
+      // Inicializar el documento PDF con opciones explícitas
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
       
       // Añadir título
-      doc.setFontSize(20);
+      doc.setFontSize(18);
       doc.setFont("helvetica", "bold");
       doc.text("Dovalina Painting", 105, 20, { align: "center" });
       
       // Añadir subtítulo
-      doc.setFontSize(16);
+      doc.setFontSize(14);
       doc.setFont("helvetica", "normal");
       doc.text(`Cotización #${sanitizeText(quote.quoteNumber)}`, 105, 30, { align: "center" });
       
@@ -128,23 +128,34 @@ export default function QuoteDetailsModal({
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
       
-      // Datos del cliente
-      doc.text(`Cliente: ${sanitizeText(quote.project?.client?.name)}`, 20, 70);
-      doc.text(`Dirección: ${sanitizeText(quote.project?.client?.address)}`, 20, 75);
-      doc.text(`Ciudad: ${sanitizeText(quote.project?.client?.city)}, ${sanitizeText(quote.project?.client?.state)}`, 20, 80);
-      doc.text(`Teléfono: ${sanitizeText(quote.project?.client?.phone)}`, 20, 85);
-      doc.text(`Email: ${sanitizeText(quote.project?.client?.email)}`, 20, 90);
+      // Datos del cliente - con comprobaciones para evitar errores
+      const clientName = quote.project?.client?.name ? sanitizeText(quote.project.client.name) : "-";
+      const clientAddress = quote.project?.client?.address ? sanitizeText(quote.project.client.address) : "-";
+      const clientCity = quote.project?.client?.city ? sanitizeText(quote.project.client.city) : "";
+      const clientState = quote.project?.client?.state ? sanitizeText(quote.project.client.state) : "";
+      const clientCityState = clientCity || clientState ? `${clientCity}${clientCity && clientState ? ', ' : ''}${clientState}` : "-";
+      const clientPhone = quote.project?.client?.phone ? sanitizeText(quote.project.client.phone) : "-";
+      const clientEmail = quote.project?.client?.email ? sanitizeText(quote.project.client.email) : "-";
       
-      // Datos del proyecto
-      doc.text(`Proyecto: ${sanitizeText(quote.project?.title)}`, 115, 70);
-      doc.text(`Dirección: ${sanitizeText(quote.project?.address)}`, 115, 75);
+      doc.text(`Cliente: ${clientName}`, 20, 70);
+      doc.text(`Dirección: ${clientAddress}`, 20, 75);
+      doc.text(`Ciudad/Estado: ${clientCityState}`, 20, 80);
+      doc.text(`Teléfono: ${clientPhone}`, 20, 85);
+      doc.text(`Email: ${clientEmail}`, 20, 90);
+      
+      // Datos del proyecto - con comprobaciones
+      const projectTitle = quote.project?.title ? sanitizeText(quote.project.title) : "-";
+      const projectAddress = quote.project?.address ? sanitizeText(quote.project.address) : "-";
+      
+      doc.text(`Proyecto: ${projectTitle}`, 115, 70);
+      doc.text(`Dirección: ${projectAddress}`, 115, 75);
       
       // Desglose de costos
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
       doc.text("Desglose de Costos", 20, 105);
       
-      // Preparar datos para la tabla
+      // Preparar datos para la tabla - asegurar que son números válidos
       const materialsCost = Number(quote.materialsCost) || 0;
       const laborCost = Number(quote.laborCost) || 0;
       const additionalCosts = Number(quote.additionalCosts) || 0;
@@ -184,7 +195,9 @@ export default function QuoteDetailsModal({
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
         
-        const splitNotes = doc.splitTextToSize(sanitizeText(quote.notes), 170);
+        // Sanitizar y limitar longitud de notas para evitar problemas
+        const notesText = sanitizeText(quote.notes).substring(0, 500); // Limitar a 500 caracteres
+        const splitNotes = doc.splitTextToSize(notesText, 170);
         doc.text(splitNotes, 20, finalY + 35);
       }
       
@@ -214,7 +227,8 @@ export default function QuoteDetailsModal({
       }
       
       // Descargar el PDF
-      doc.save(`Cotizacion_${sanitizeText(quote.quoteNumber)}.pdf`);
+      const filename = `Cotizacion_${sanitizeText(quote.quoteNumber).replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      doc.save(filename);
       
       toast({
         title: "PDF generado",
@@ -222,11 +236,21 @@ export default function QuoteDetailsModal({
       });
     } catch (error) {
       console.error("Error generating PDF:", error);
-      toast({
-        title: "Error al generar PDF",
-        description: "Ha ocurrido un error al generar el PDF. Inténtalo de nuevo.",
-        variant: "destructive",
-      });
+      
+      // Si es un dispositivo móvil, ofrecer una alternativa
+      if (isMobile) {
+        toast({
+          title: "Error en dispositivo móvil",
+          description: "La generación de PDF en dispositivos móviles puede ser limitada. Intenta usar un navegador de escritorio para esta función.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error al generar PDF",
+          description: "Ha ocurrido un error al generar el PDF. Inténtalo de nuevo más tarde.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
