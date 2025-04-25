@@ -79,6 +79,12 @@ export default function QuoteDetailsModal({
     console.log("Print quote:", quote);
     
     try {
+      // Función para sanitizar texto y evitar errores
+      const sanitizeText = (text: string | null | undefined): string => {
+        if (text === null || text === undefined) return "-";
+        return String(text).trim();
+      };
+      
       // Inicializar el documento PDF
       const doc = new jsPDF();
       
@@ -90,7 +96,7 @@ export default function QuoteDetailsModal({
       // Añadir subtítulo
       doc.setFontSize(16);
       doc.setFont("helvetica", "normal");
-      doc.text(`Cotización #${quote.quoteNumber}`, 105, 30, { align: "center" });
+      doc.text(`Cotización #${sanitizeText(quote.quoteNumber)}`, 105, 30, { align: "center" });
       
       // Añadir fecha
       doc.setFontSize(10);
@@ -110,32 +116,39 @@ export default function QuoteDetailsModal({
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
       
-      doc.text(`Cliente: ${quote.project?.client?.name || "-"}`, 20, 70);
-      doc.text(`Dirección: ${quote.project?.client?.address || "-"}`, 20, 75);
-      doc.text(`Ciudad: ${quote.project?.client?.city || "-"}, ${quote.project?.client?.state || "-"}`, 20, 80);
-      doc.text(`Teléfono: ${quote.project?.client?.phone || "-"}`, 20, 85);
-      doc.text(`Email: ${quote.project?.client?.email || "-"}`, 20, 90);
+      // Datos del cliente
+      doc.text(`Cliente: ${sanitizeText(quote.project?.client?.name)}`, 20, 70);
+      doc.text(`Dirección: ${sanitizeText(quote.project?.client?.address)}`, 20, 75);
+      doc.text(`Ciudad: ${sanitizeText(quote.project?.client?.city)}, ${sanitizeText(quote.project?.client?.state)}`, 20, 80);
+      doc.text(`Teléfono: ${sanitizeText(quote.project?.client?.phone)}`, 20, 85);
+      doc.text(`Email: ${sanitizeText(quote.project?.client?.email)}`, 20, 90);
       
-      doc.text(`Proyecto: ${quote.project?.title || "-"}`, 115, 70);
-      doc.text(`Dirección: ${quote.project?.address || "-"}`, 115, 75);
+      // Datos del proyecto
+      doc.text(`Proyecto: ${sanitizeText(quote.project?.title)}`, 115, 70);
+      doc.text(`Dirección: ${sanitizeText(quote.project?.address)}`, 115, 75);
       
       // Desglose de costos
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
       doc.text("Desglose de Costos", 20, 105);
       
+      // Preparar datos para la tabla
+      const materialsCost = Number(quote.materialsCost) || 0;
+      const laborCost = Number(quote.laborCost) || 0;
+      const additionalCosts = Number(quote.additionalCosts) || 0;
+      const margin = Number(quote.margin) || 0;
+      const marginAmount = (materialsCost + laborCost + additionalCosts) * (margin / 100);
+      
       // Tabla de costos
       const costData = [
         ["Concepto", "Monto"],
-        ["Materiales", formatCurrency(Number(quote.materialsCost))],
-        ["Mano de Obra", formatCurrency(Number(quote.laborCost))],
-        ["Costos Adicionales", formatCurrency(Number(quote.additionalCosts))],
-        [`Margen (${Number(quote.margin)}%)`, formatCurrency(
-          (Number(quote.materialsCost) + Number(quote.laborCost) + Number(quote.additionalCosts)) * 
-          (Number(quote.margin) / 100)
-        )],
+        ["Materiales", formatCurrency(materialsCost)],
+        ["Mano de Obra", formatCurrency(laborCost)],
+        ["Costos Adicionales", formatCurrency(additionalCosts)],
+        [`Margen (${margin}%)`, formatCurrency(marginAmount)],
       ];
       
+      // Generar tabla
       (doc as any).autoTable({
         startY: 110,
         head: [costData[0]],
@@ -146,10 +159,10 @@ export default function QuoteDetailsModal({
       });
       
       // Total
-      const finalY = (doc as any).lastAutoTable.finalY || 150;
+      const finalY = (doc as any).lastAutoTable?.finalY || 150;
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
-      doc.text(`Monto Total: ${formatCurrency(Number(quote.totalAmount))}`, 150, finalY + 10, { align: "right" });
+      doc.text(`Monto Total: ${formatCurrency(Number(quote.totalAmount) || 0)}`, 150, finalY + 10, { align: "right" });
       
       // Notas
       if (quote.notes) {
@@ -159,7 +172,7 @@ export default function QuoteDetailsModal({
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
         
-        const splitNotes = doc.splitTextToSize(quote.notes, 170);
+        const splitNotes = doc.splitTextToSize(sanitizeText(quote.notes), 170);
         doc.text(splitNotes, 20, finalY + 35);
       }
       
@@ -189,7 +202,7 @@ export default function QuoteDetailsModal({
       }
       
       // Descargar el PDF
-      doc.save(`Cotizacion_${quote.quoteNumber}.pdf`);
+      doc.save(`Cotizacion_${sanitizeText(quote.quoteNumber)}.pdf`);
       
       toast({
         title: "PDF generado",
