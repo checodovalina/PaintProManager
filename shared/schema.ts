@@ -72,10 +72,12 @@ export const personnel = pgTable("personnel", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   type: personnelTypeEnum("type").notNull(),
+  position: text("position").notNull(),
+  phone: text("phone").notNull(),
   email: text("email"),
-  phone: text("phone"),
-  rate: decimal("rate", { precision: 8, scale: 2 }),
-  specialty: text("specialty"),
+  address: text("address"),
+  rate: text("rate"),
+  taxId: text("tax_id"),
   notes: text("notes"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -244,9 +246,14 @@ export const projectsInsertSchema = createInsertSchema(projects, {
 });
 
 export const personnelInsertSchema = createInsertSchema(personnel, {
-  name: (schema) => schema.min(2, "Name must be at least 2 characters"),
-  email: (schema) => schema.email("Must provide a valid email").optional().nullable(),
-  phone: (schema) => schema.min(10, "Phone must be at least 10 characters").optional().nullable(),
+  name: (schema) => schema.min(2, "El nombre debe tener al menos 2 caracteres"),
+  position: (schema) => schema.min(2, "La posición debe tener al menos 2 caracteres"),
+  phone: (schema) => schema.min(10, "El teléfono debe tener al menos 10 caracteres"),
+  email: (schema) => schema.email("Debe proporcionar un email válido").optional().nullable(),
+  address: (schema) => schema.optional().nullable(),
+  rate: (schema) => schema.optional().nullable(),
+  taxId: (schema) => schema.optional().nullable(),
+  notes: (schema) => schema.optional().nullable(),
 });
 
 export const quotesInsertSchema = createInsertSchema(quotes);
