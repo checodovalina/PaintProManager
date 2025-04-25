@@ -34,6 +34,7 @@ export default function QuoteDetailsModal({
   onPrint 
 }: QuoteDetailsModalProps) {
   const { toast } = useToast();
+  const isMobile = useMobile();
   
   const formatCurrency = (amount: number | null | undefined) => {
     if (amount === null || amount === undefined) return "-";
@@ -221,7 +222,10 @@ export default function QuoteDetailsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className={`
+        ${isMobile ? 'w-[95vw] max-w-[95vw] p-4' : 'sm:max-w-[700px]'}
+        max-h-[90vh] overflow-y-auto
+      `}>
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle>Detalles de Cotización #{quote.quoteNumber}</DialogTitle>
@@ -338,7 +342,7 @@ export default function QuoteDetailsModal({
                 className="flex items-center"
               >
                 <Printer className="h-4 w-4 mr-1" />
-                Imprimir
+                {isMobile ? "" : "Imprimir"}
               </Button>
             )}
             
@@ -350,7 +354,7 @@ export default function QuoteDetailsModal({
               className="flex items-center"
             >
               <Download className="h-4 w-4 mr-1" />
-              Descargar PDF
+              {isMobile ? "PDF" : "Descargar PDF"}
             </Button>
           </div>
           
@@ -372,7 +376,9 @@ export default function QuoteDetailsModal({
                 className="flex items-center"
               >
                 <CheckCircle2 className="h-4 w-4 mr-1" />
-                {approveQuoteMutation.isPending ? "Aprobando..." : "Aprobar Cotización"}
+                {approveQuoteMutation.isPending 
+                  ? (isMobile ? "..." : "Aprobando...") 
+                  : (isMobile ? "Aprobar" : "Aprobar Cotización")}
               </Button>
             )}
           </div>
