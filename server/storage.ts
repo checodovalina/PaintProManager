@@ -458,6 +458,19 @@ export const storage = {
     });
   },
   
+  async getQuoteById(id: number) {
+    return db.query.quotes.findFirst({
+      where: eq(quotes.id, id),
+      with: {
+        project: {
+          with: {
+            client: true
+          }
+        }
+      }
+    });
+  },
+  
   async createQuote(data: QuoteInsert, userId: number) {
     const [quote] = await db.insert(quotes).values(data).returning();
     
@@ -469,8 +482,8 @@ export const storage = {
     
     // Create activity for new quote
     await this.createActivity({
-      title: `Quote created for project: ${project?.title || "Unknown"}`,
-      description: `Amount: $${data.totalAmount}`,
+      title: `Cotización creada para proyecto: ${project?.title || "Unknown"}`,
+      description: `Monto: $${data.totalAmount}`,
       type: "info",
       relatedId: quote.id,
       relatedType: "quote",
@@ -478,6 +491,19 @@ export const storage = {
     });
     
     return quote;
+  },
+  
+  async approveQuote(id: number) {
+    const [updatedQuote] = await db
+      .update(quotes)
+      .set({
+        isApproved: true,
+        approvalDate: new Date()
+      })
+      .where(eq(quotes.id, id))
+      .returning();
+      
+    return updatedQuote;
   },
   
   // Service Order operations

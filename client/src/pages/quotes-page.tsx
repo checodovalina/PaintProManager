@@ -7,23 +7,24 @@ import QuoteList from "@/components/QuoteList";
 import NewQuoteModal from "@/components/NewQuoteModal";
 import QuoteDetailsModal from "@/components/QuoteDetailsModal";
 import { Quote } from "@shared/schema";
+import { QuoteWithRelations } from "@/lib/extended-types";
 
 export default function QuotesPage() {
   const [isNewQuoteModalOpen, setIsNewQuoteModalOpen] = useState(false);
-  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+  const [selectedQuote, setSelectedQuote] = useState<QuoteWithRelations | null>(null);
   
   // Fetch quotes
-  const { data: quotesData, isLoading: isLoadingQuotes, refetch } = useQuery({
+  const { data: quotesData, isLoading: isLoadingQuotes, refetch } = useQuery<QuoteWithRelations[]>({
     queryKey: ['/api/quotes'],
   });
 
   const quotes = quotesData || [];
 
-  const handleViewQuote = (quote: Quote) => {
+  const handleViewQuote = (quote: QuoteWithRelations) => {
     setSelectedQuote(quote);
   };
 
-  const handlePrintQuote = (quote: Quote) => {
+  const handlePrintQuote = (quote: QuoteWithRelations) => {
     // Implementar funcionalidad de impresión aquí
     console.log("Print quote:", quote);
     window.print();

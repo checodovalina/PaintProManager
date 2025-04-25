@@ -19,15 +19,16 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Quote } from "@shared/schema";
+import { QuoteWithRelations } from "@/lib/extended-types";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 
 interface QuoteListProps {
-  quotes: Quote[];
+  quotes: QuoteWithRelations[];
   isLoading: boolean;
-  onViewQuote: (quote: Quote) => void;
-  onPrintQuote?: (quote: Quote) => void;
-  onApproveQuote?: (quote: Quote) => void;
+  onViewQuote: (quote: QuoteWithRelations) => void;
+  onPrintQuote?: (quote: QuoteWithRelations) => void;
+  onApproveQuote?: (quote: QuoteWithRelations) => void;
 }
 
 export default function QuoteList({ 
