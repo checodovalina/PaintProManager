@@ -16,7 +16,11 @@ import {
   QuoteInsert,
   ServiceOrderInsert,
   ActivityInsert,
+  InsertUser,
 } from "@shared/schema";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
+import { pool } from "@db"; // Importar el pool directamente desde @db
 
 // Helper function for dashboard statistics
 async function getSystemStats() {
@@ -125,12 +129,56 @@ async function getSystemStats() {
   };
 }
 
+// Crear una instancia de la store para las sesiones de PostgreSQL
+const PostgresSessionStore = connectPg(session);
+const sessionStore = new PostgresSessionStore({ 
+  pool, 
+  createTableIfMissing: true 
+});
+
 export const storage = {
+  // Propiedad sessionStore para el middleware de sesión
+  sessionStore,
+
   // User operations
   async getUserByUsername(username: string) {
     return db.query.users.findFirst({
       where: eq(users.username, username)
     });
+  },
+
+  async getUser(id: number) {
+    return db.query.users.findFirst({
+      where: eq(users.id, id)
+    });
+  },
+
+  async getAllUsers() {
+    return db.query.users.findMany({
+      orderBy: [desc(users.createdAt)]
+    });
+  },
+
+  async createUser(data: InsertUser) {
+    const [user] = await db.insert(users).values(data).returning();
+    return user;
+  },
+
+  async updateUser(id: number, data: Partial<InsertUser>) {
+    const [updatedUser] = await db
+      .update(users)
+      .set(data)
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  },
+
+  async deleteUser(id: number) {
+    const [deletedUser] = await db
+      .delete(users)
+      .where(eq(users.id, id))
+      .returning();
+    return deletedUser;
   },
   
   // Dashboard data

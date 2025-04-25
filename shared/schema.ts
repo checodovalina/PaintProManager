@@ -17,6 +17,7 @@ export const projectStatusEnum = pgEnum('project_status', [
 ]);
 export const projectPriorityEnum = pgEnum('project_priority', ['normal', 'high', 'urgent']);
 export const personnelTypeEnum = pgEnum('personnel_type', ['employee', 'subcontractor']);
+export const userRoleEnum = pgEnum('user_role', ['superadmin', 'admin', 'member', 'viewer']);
 
 // Users
 export const users = pgTable("users", {
@@ -25,7 +26,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   fullName: text("full_name"),
   email: text("email"),
-  role: text("role").default("user"),
+  role: userRoleEnum("role").default("viewer"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -275,7 +276,9 @@ export type ActivityInsert = z.infer<typeof activitiesInsertSchema>;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const insertUserSchema = createInsertSchema(users, {
+  username: (schema) => schema.min(3, "El nombre de usuario debe tener al menos 3 caracteres"),
+  password: (schema) => schema.min(6, "La contraseña debe tener al menos 6 caracteres"),
+  email: (schema) => schema.email("Debe proporcionar un email válido").optional(),
+  fullName: (schema) => schema.min(3, "El nombre completo debe tener al menos 3 caracteres").optional(),
 });

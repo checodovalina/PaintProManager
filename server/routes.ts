@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
@@ -7,44 +7,132 @@ import {
   PersonnelInsert, 
   QuoteInsert, 
   ServiceOrderInsert,
+  InsertUser,
   projectsInsertSchema,
   clientsInsertSchema,
   personnelInsertSchema,
   quotesInsertSchema,
-  serviceOrdersInsertSchema
+  serviceOrdersInsertSchema,
+  insertUserSchema
 } from "@shared/schema";
 import { z } from "zod";
+import { setupAuth } from "./auth";
+
+// Middleware para verificar si el usuario tiene el rol permitido
+const checkRole = (roles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "No autorizado" });
+    }
+    
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ message: "No tienes permisos para realizar esta acción" });
+    }
+    
+    next();
+  };
+};
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // API routes prefix
   const apiPrefix = '/api';
 
-  // Users and authentication
-  app.post(`${apiPrefix}/login`, async (req, res) => {
+  // Configuración de autenticación con Passport
+  setupAuth(app);
+
+  // Rutas para el módulo de usuarios (solo accesible por administradores)
+  app.get(`${apiPrefix}/users`, checkRole(['superadmin', 'admin']), async (req, res) => {
     try {
-      const { username, password } = req.body;
-      const user = await storage.getUserByUsername(username);
-      
-      if (!user || user.password !== password) {
-        return res.status(401).json({ message: "Invalid credentials" });
-      }
-      
-      req.session.userId = user.id;
-      return res.json({ message: "Logged in successfully", user: { id: user.id, username: user.username } });
+      const users = await storage.getAllUsers();
+      // No devolver las contraseñas
+      const usersWithoutPasswords = users.map(user => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      });
+      return res.json(usersWithoutPasswords);
     } catch (error) {
-      console.error("Login error:", error);
-      return res.status(500).json({ message: "An error occurred during login" });
+      console.error("Error al obtener usuarios:", error);
+      return res.status(500).json({ message: "Error al obtener la lista de usuarios" });
     }
   });
 
-  app.post(`${apiPrefix}/logout`, (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        return res.status(500).json({ message: "Failed to logout" });
+  app.post(`${apiPrefix}/users`, checkRole(['superadmin', 'admin']), async (req, res) => {
+    try {
+      const validatedData = insertUserSchema.parse(req.body);
+      const newUser = await storage.createUser(validatedData);
+      // No devolver la contraseña
+      const { password, ...userWithoutPassword } = newUser;
+      return res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ errors: error.errors });
       }
-      res.clearCookie("connect.sid");
-      return res.json({ message: "Logged out successfully" });
-    });
+      console.error("Error al crear usuario:", error);
+      return res.status(500).json({ message: "Error al crear el usuario" });
+    }
+  });
+
+  app.get(`${apiPrefix}/users/:id`, checkRole(['superadmin', 'admin']), async (req, res) => {
+    try {
+      const user = await storage.getUser(parseInt(req.params.id));
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      // No devolver la contraseña
+      const { password, ...userWithoutPassword } = user;
+      return res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error al obtener usuario:", error);
+      return res.status(500).json({ message: "Error al obtener el usuario" });
+    }
+  });
+
+  app.patch(`${apiPrefix}/users/:id`, checkRole(['superadmin', 'admin']), async (req, res) => {
+    try {
+      // Solo superadmin puede modificar a otro superadmin
+      if (req.user.role !== 'superadmin') {
+        const userToUpdate = await storage.getUser(parseInt(req.params.id));
+        if (userToUpdate && userToUpdate.role === 'superadmin') {
+          return res.status(403).json({ message: "No tienes permisos para modificar a un superadmin" });
+        }
+      }
+
+      const validatedData = insertUserSchema.partial().parse(req.body);
+      const updatedUser = await storage.updateUser(parseInt(req.params.id), validatedData);
+      if (!updatedUser) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      // No devolver la contraseña
+      const { password, ...userWithoutPassword } = updatedUser;
+      return res.json(userWithoutPassword);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ errors: error.errors });
+      }
+      console.error("Error al actualizar usuario:", error);
+      return res.status(500).json({ message: "Error al actualizar el usuario" });
+    }
+  });
+
+  app.delete(`${apiPrefix}/users/:id`, checkRole(['superadmin']), async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      // No permitir que un usuario se elimine a sí mismo
+      if (userId === req.user.id) {
+        return res.status(400).json({ message: "No puedes eliminar tu propia cuenta" });
+      }
+      
+      const deletedUser = await storage.deleteUser(userId);
+      if (!deletedUser) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      return res.json({ message: "Usuario eliminado correctamente" });
+    } catch (error) {
+      console.error("Error al eliminar usuario:", error);
+      return res.status(500).json({ message: "Error al eliminar el usuario" });
+    }
   });
 
   // Dashboard data

@@ -12,18 +12,46 @@ async function seed() {
       console.log("Seeding users...");
       const users = await db.insert(schema.users).values([
         {
-          username: "admin",
-          password: "admin123", // In production, this would be hashed
-          fullName: "John Dovalina",
-          email: "admin@dovalinapainting.com",
+          username: "sdovalina",
+          password: "password123", // En producción, esto estaría hasheado
+          fullName: "Samuel Dovalina",
+          email: "sdovalina@dovalinapainting.com",
+          role: "superadmin"
+        },
+        {
+          username: "dianashindledecker",
+          password: "password123", // En producción, esto estaría hasheado
+          fullName: "Diana Shindledecker",
+          email: "diana@dovalinapainting.com",
           role: "admin"
         },
         {
-          username: "manager",
-          password: "manager123",
-          fullName: "Maria Rodriguez",
-          email: "maria@dovalinapainting.com",
-          role: "manager"
+          username: "davidshindledecker",
+          password: "password123", // En producción, esto estaría hasheado
+          fullName: "David Shindledecker",
+          email: "david@dovalinapainting.com",
+          role: "admin"
+        },
+        {
+          username: "alexdovalina",
+          password: "password123", // En producción, esto estaría hasheado
+          fullName: "Alex Dovalina",
+          email: "alex@dovalinapainting.com",
+          role: "admin"
+        },
+        {
+          username: "member",
+          password: "password123", // En producción, esto estaría hasheado
+          fullName: "Usuario Miembro",
+          email: "member@dovalinapainting.com",
+          role: "member"
+        },
+        {
+          username: "viewer",
+          password: "password123", // En producción, esto estaría hasheado
+          fullName: "Usuario Visualizador",
+          email: "viewer@dovalinapainting.com",
+          role: "viewer"
         }
       ]).returning();
       console.log(`Created ${users.length} users`);
