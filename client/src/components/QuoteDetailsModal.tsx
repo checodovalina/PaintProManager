@@ -16,6 +16,8 @@ import { Separator } from "@/components/ui/separator";
 import { CheckCircle2, Printer, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import jsPDF from "jspdf";
+import 'jspdf-autotable';
 
 interface QuoteDetailsModalProps {
   quote: QuoteWithRelations;
@@ -71,6 +73,136 @@ export default function QuoteDetailsModal({
 
   const handleApprove = () => {
     approveQuoteMutation.mutate();
+  };
+  
+  const handleDownloadPDF = () => {
+    console.log("Print quote:", quote);
+    
+    try {
+      // Inicializar el documento PDF
+      const doc = new jsPDF();
+      
+      // Añadir título
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.text("Dovalina Painting", 105, 20, { align: "center" });
+      
+      // Añadir subtítulo
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Cotización #${quote.quoteNumber}`, 105, 30, { align: "center" });
+      
+      // Añadir fecha
+      doc.setFontSize(10);
+      doc.text(`Fecha: ${formatDate(quote.createdAt)}`, 20, 40);
+      
+      // Status
+      doc.setFontSize(10);
+      doc.text(`Estado: ${quote.isApproved ? "Aprobada" : "Pendiente"}`, 20, 45);
+      if (quote.isApproved && quote.approvalDate) {
+        doc.text(`Fecha de aprobación: ${formatDate(quote.approvalDate)}`, 20, 50);
+      }
+      
+      // Información del cliente y proyecto
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Información del Cliente y Proyecto", 20, 60);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      
+      doc.text(`Cliente: ${quote.project?.client?.name || "-"}`, 20, 70);
+      doc.text(`Dirección: ${quote.project?.client?.address || "-"}`, 20, 75);
+      doc.text(`Ciudad: ${quote.project?.client?.city || "-"}, ${quote.project?.client?.state || "-"}`, 20, 80);
+      doc.text(`Teléfono: ${quote.project?.client?.phone || "-"}`, 20, 85);
+      doc.text(`Email: ${quote.project?.client?.email || "-"}`, 20, 90);
+      
+      doc.text(`Proyecto: ${quote.project?.title || "-"}`, 115, 70);
+      doc.text(`Dirección: ${quote.project?.address || "-"}`, 115, 75);
+      
+      // Desglose de costos
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Desglose de Costos", 20, 105);
+      
+      // Tabla de costos
+      const costData = [
+        ["Concepto", "Monto"],
+        ["Materiales", formatCurrency(Number(quote.materialsCost))],
+        ["Mano de Obra", formatCurrency(Number(quote.laborCost))],
+        ["Costos Adicionales", formatCurrency(Number(quote.additionalCosts))],
+        [`Margen (${Number(quote.margin)}%)`, formatCurrency(
+          (Number(quote.materialsCost) + Number(quote.laborCost) + Number(quote.additionalCosts)) * 
+          (Number(quote.margin) / 100)
+        )],
+      ];
+      
+      (doc as any).autoTable({
+        startY: 110,
+        head: [costData[0]],
+        body: costData.slice(1),
+        theme: 'striped',
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+        margin: { top: 110 },
+      });
+      
+      // Total
+      const finalY = (doc as any).lastAutoTable.finalY || 150;
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Monto Total: ${formatCurrency(Number(quote.totalAmount))}`, 150, finalY + 10, { align: "right" });
+      
+      // Notas
+      if (quote.notes) {
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("Notas:", 20, finalY + 25);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        
+        const splitNotes = doc.splitTextToSize(quote.notes, 170);
+        doc.text(splitNotes, 20, finalY + 35);
+      }
+      
+      // Pie de página
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.text(
+          "Esta cotización tiene una validez de 30 días a partir de la fecha de emisión.",
+          105,
+          doc.internal.pageSize.height - 30,
+          { align: "center" }
+        );
+        doc.text(
+          "Dovalina Painting LLC - Todos los derechos reservados © 2025",
+          105,
+          doc.internal.pageSize.height - 20,
+          { align: "center" }
+        );
+        doc.text(
+          `Página ${i} de ${pageCount}`,
+          105,
+          doc.internal.pageSize.height - 10,
+          { align: "center" }
+        );
+      }
+      
+      // Descargar el PDF
+      doc.save(`Cotizacion_${quote.quoteNumber}.pdf`);
+      
+      toast({
+        title: "PDF generado",
+        description: "La cotización ha sido descargada en formato PDF.",
+      });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast({
+        title: "Error al generar PDF",
+        description: "Ha ocurrido un error al generar el PDF. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -200,6 +332,7 @@ export default function QuoteDetailsModal({
               type="button" 
               variant="outline"
               size="sm"
+              onClick={handleDownloadPDF}
               className="flex items-center"
             >
               <Download className="h-4 w-4 mr-1" />

@@ -34,11 +34,11 @@ interface NewQuoteModalProps {
 interface FormData {
   projectId: number;
   quoteNumber: string;
-  materialsCost: number;
-  laborCost: number;
-  additionalCosts: number;
-  margin: number;
-  totalAmount: number;
+  materialsCost: number | string;
+  laborCost: number | string;
+  additionalCosts: number | string;
+  margin: number | string;
+  totalAmount: number | string;
   notes: string;
 }
 
@@ -86,8 +86,14 @@ export default function NewQuoteModal({
 
   // Calculate total amount when costs or margin change
   useEffect(() => {
-    const subtotal = formData.materialsCost + formData.laborCost + formData.additionalCosts;
-    const marginAmount = subtotal * (formData.margin / 100);
+    // Aseguramos que trabajamos con valores numéricos
+    const materialsCost = typeof formData.materialsCost === 'number' ? formData.materialsCost : parseFloat(formData.materialsCost as string) || 0;
+    const laborCost = typeof formData.laborCost === 'number' ? formData.laborCost : parseFloat(formData.laborCost as string) || 0;
+    const additionalCosts = typeof formData.additionalCosts === 'number' ? formData.additionalCosts : parseFloat(formData.additionalCosts as string) || 0;
+    const margin = typeof formData.margin === 'number' ? formData.margin : parseFloat(formData.margin as string) || 0;
+    
+    const subtotal = materialsCost + laborCost + additionalCosts;
+    const marginAmount = subtotal * (margin / 100);
     const total = subtotal + marginAmount;
     
     setFormData(prev => ({
@@ -111,8 +117,8 @@ export default function NewQuoteModal({
     }
   }, [selectedProjectId]);
 
-  const createQuoteMutation = useMutation({
-    mutationFn: async (data: FormData) => {
+  const createQuoteMutation = useMutation<Quote, Error, any>({
+    mutationFn: async (data: any) => {
       const res = await apiRequest("POST", "/api/quotes", data);
       return await res.json();
     },
