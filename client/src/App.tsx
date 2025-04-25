@@ -9,7 +9,7 @@ import AuthPage from "@/pages/auth-page";
 import UsersPage from "@/pages/users-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
-import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeProvider } from "./components/theme-provider";
 
 function Router() {
   return (
