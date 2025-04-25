@@ -15,14 +15,14 @@ async function seed() {
           username: "admin",
           password: "admin123", // In production, this would be hashed
           fullName: "John Dovalina",
-          email: "admin@pinturapro.com",
+          email: "admin@dovalinapainting.com",
           role: "admin"
         },
         {
           username: "manager",
           password: "manager123",
           fullName: "Maria Rodriguez",
-          email: "maria@pinturapro.com",
+          email: "maria@dovalinapainting.com",
           role: "manager"
         }
       ]).returning();
@@ -154,7 +154,7 @@ async function seed() {
         {
           name: "Miguel Rodriguez",
           type: "employee",
-          email: "miguel@pinturapro.com",
+          email: "miguel@dovalinapainting.com",
           phone: "512-555-1111",
           rate: 25.00,
           specialty: "Interior Painting",
@@ -163,7 +163,7 @@ async function seed() {
         {
           name: "Carlos Lopez",
           type: "employee",
-          email: "carlos@pinturapro.com",
+          email: "carlos@dovalinapainting.com",
           phone: "512-555-2222",
           rate: 25.00,
           specialty: "Exterior Painting",
@@ -172,7 +172,7 @@ async function seed() {
         {
           name: "Juan Martinez",
           type: "employee",
-          email: "juan@pinturapro.com",
+          email: "juan@dovalinapainting.com",
           phone: "512-555-3333",
           rate: 27.50,
           specialty: "Commercial Painting",
@@ -181,7 +181,7 @@ async function seed() {
         {
           name: "Roberto Garcia",
           type: "employee",
-          email: "roberto@pinturapro.com",
+          email: "roberto@dovalinapainting.com",
           phone: "512-555-4444",
           rate: 26.00,
           specialty: "Interior Painting",

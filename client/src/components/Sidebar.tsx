@@ -55,7 +55,7 @@ export default function Sidebar({ open, toggleSidebar }: SidebarProps) {
               <path d="M18 21V8H9a3 3 0 0 0-3 3v10"></path>
               <circle cx="9" cy="11" r="1"></circle>
             </svg>
-            <span className="text-xl font-semibold">PinturaPro</span>
+            <span className="text-xl font-semibold">Dovalina Painting LLC</span>
           </div>
           <button
             onClick={toggleSidebar}

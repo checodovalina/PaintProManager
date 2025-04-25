@@ -1,4 +1,4 @@
-// PinturaPro shared interface types
+// Dovalina Painting LLC shared interface types
 
 export type ClientType = 'residential' | 'commercial' | 'industrial';
 export type ProjectStatus = 
