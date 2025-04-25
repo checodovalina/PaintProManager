@@ -45,13 +45,40 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface PersonnelFormProps {
-  defaultValues?: Partial<FormValues>;
+  defaultValues?: Personnel | Partial<FormValues>;
   onSubmitSuccess: () => void;
 }
 
 export function PersonnelForm({ defaultValues, onSubmitSuccess }: PersonnelFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Función para mapear los valores por defecto del personal a los valores del formulario
+  const mapPersonnelToFormValues = (personnel: Personnel | Partial<FormValues> | undefined): Partial<FormValues> => {
+    if (!personnel) return {};
+    
+    // Comprobar si es un objeto Personnel
+    if ('id' in personnel && 'createdAt' in personnel) {
+      const p = personnel as Personnel;
+      // Convertir null a string vacía para que coincida con los tipos esperados en el formulario
+      return {
+        name: p.name,
+        type: p.type,
+        position: p.position,
+        phone: p.phone,
+        email: p.email !== null ? p.email : "",
+        address: p.address !== null ? p.address : "",
+        notes: p.notes !== null ? p.notes : "",
+        rate: p.rate !== null ? p.rate : "",
+        taxId: p.taxId !== null ? p.taxId : "",
+      };
+    }
+    
+    // Si es un objeto FormValues parcial, lo devolvemos tal cual
+    return personnel as Partial<FormValues>;
+  };
+  
+  const mappedDefaultValues = mapPersonnelToFormValues(defaultValues);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -65,15 +92,19 @@ export function PersonnelForm({ defaultValues, onSubmitSuccess }: PersonnelFormP
       notes: "",
       rate: "",
       taxId: "",
-      ...defaultValues,
+      ...mappedDefaultValues,
     },
   });
 
   const createPersonnelMutation = useMutation({
     mutationFn: async (data: FormValues) => {
+      // Verificamos el tipo de defaultValues
+      const isPersonnel = defaultValues && 'id' in defaultValues;
+      const id = isPersonnel ? (defaultValues as Personnel).id : undefined;
+      
       const response = await apiRequest(
-        defaultValues?.name ? "PATCH" : "POST",
-        defaultValues?.name ? `/api/personnel/${defaultValues.name}` : "/api/personnel",
+        id ? "PATCH" : "POST",
+        id ? `/api/personnel/${id}` : "/api/personnel",
         data
       );
       return response.json();
