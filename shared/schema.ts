@@ -122,6 +122,7 @@ export const serviceOrders = pgTable("service_orders", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   startedAt: timestamp("started_at"),
   completedAt: timestamp("completed_at"),
+  createdBy: integer("created_by").references(() => users.id),
 });
 
 // Project images (before/after)

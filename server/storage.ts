@@ -550,13 +550,13 @@ export const storage = {
       type: 'info',
       relatedId: order.id,
       relatedType: 'service_order',
-      createdBy: 1 // Usuario por defecto, se debería reemplazar por el ID real
+      createdBy: data.createdBy || 3 // Usar el ID del usuario proporcionado o un valor predeterminado válido
     });
     
     return order;
   },
   
-  async startServiceOrder(id: number, startSignature?: string) {
+  async startServiceOrder(id: number, startSignature?: string, userId?: number) {
     const [order] = await db
       .update(serviceOrders)
       .set({
@@ -573,14 +573,14 @@ export const storage = {
         type: 'info',
         relatedId: order.id,
         relatedType: 'service_order',
-        createdBy: 1 // Usuario por defecto
+        createdBy: userId || 3 // Usar el ID del usuario proporcionado o un valor predeterminado válido
       });
     }
     
     return order;
   },
   
-  async completeServiceOrder(id: number, endSignature?: string) {
+  async completeServiceOrder(id: number, endSignature?: string, userId?: number) {
     const [order] = await db
       .update(serviceOrders)
       .set({
@@ -597,7 +597,7 @@ export const storage = {
         type: 'info',
         relatedId: order.id,
         relatedType: 'service_order',
-        createdBy: 1 // Usuario por defecto
+        createdBy: userId || 3 // Usar el ID del usuario proporcionado o un valor predeterminado válido
       });
     }
     

@@ -487,7 +487,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const validatedData = serviceOrdersInsertSchema.parse(req.body);
-      const newServiceOrder = await storage.createServiceOrder(validatedData);
+      // Pasamos el ID del usuario autenticado
+      const newServiceOrder = await storage.createServiceOrder({
+        ...validatedData,
+        createdBy: req.user?.id
+      });
       
       // Actualizar estado del proyecto si es necesario
       await storage.updateProjectStatus(newServiceOrder.projectId, 'in_preparation');
@@ -510,7 +514,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const id = parseInt(req.params.id);
       const startSignature = req.body.startSignature || null;
-      const serviceOrder = await storage.startServiceOrder(id, startSignature);
+      const serviceOrder = await storage.startServiceOrder(id, startSignature, req.user.id);
       
       if (!serviceOrder) {
         return res.status(404).json({ message: "Service order not found" });
@@ -534,7 +538,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const id = parseInt(req.params.id);
       const endSignature = req.body.endSignature || null;
-      const serviceOrder = await storage.completeServiceOrder(id, endSignature);
+      const serviceOrder = await storage.completeServiceOrder(id, endSignature, req.user.id);
       
       if (!serviceOrder) {
         return res.status(404).json({ message: "Service order not found" });
