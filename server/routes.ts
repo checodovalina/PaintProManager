@@ -456,10 +456,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get(`${apiPrefix}/service-orders/:id`, async (req, res) => {
+    try {
+      const serviceOrder = await storage.getServiceOrderById(parseInt(req.params.id));
+      if (!serviceOrder) {
+        return res.status(404).json({ message: "Service order not found" });
+      }
+      return res.json(serviceOrder);
+    } catch (error) {
+      console.error("Error fetching service order:", error);
+      return res.status(500).json({ message: "Failed to fetch service order details" });
+    }
+  });
+
+  app.get(`${apiPrefix}/projects/:projectId/service-orders`, async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const serviceOrders = await storage.getServiceOrdersByProjectId(projectId);
+      return res.json(serviceOrders);
+    } catch (error) {
+      console.error("Error fetching project service orders:", error);
+      return res.status(500).json({ message: "Failed to fetch project service orders" });
+    }
+  });
+
   app.post(`${apiPrefix}/service-orders`, async (req, res) => {
     try {
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
       const validatedData = serviceOrdersInsertSchema.parse(req.body);
       const newServiceOrder = await storage.createServiceOrder(validatedData);
+      
+      // Actualizar estado del proyecto si es necesario
+      await storage.updateProjectStatus(newServiceOrder.projectId, 'in_preparation');
+      
       return res.status(201).json(newServiceOrder);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -467,6 +499,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Error creating service order:", error);
       return res.status(500).json({ message: "Failed to create service order" });
+    }
+  });
+  
+  app.patch(`${apiPrefix}/service-orders/:id/start`, async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const id = parseInt(req.params.id);
+      const startSignature = req.body.startSignature || null;
+      const serviceOrder = await storage.startServiceOrder(id, startSignature);
+      
+      if (!serviceOrder) {
+        return res.status(404).json({ message: "Service order not found" });
+      }
+      
+      // Actualizar estado del proyecto
+      await storage.updateProjectStatus(serviceOrder.projectId, 'in_progress');
+      
+      return res.json(serviceOrder);
+    } catch (error) {
+      console.error("Error starting service order:", error);
+      return res.status(500).json({ message: "Failed to start service order" });
+    }
+  });
+  
+  app.patch(`${apiPrefix}/service-orders/:id/complete`, async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const id = parseInt(req.params.id);
+      const endSignature = req.body.endSignature || null;
+      const serviceOrder = await storage.completeServiceOrder(id, endSignature);
+      
+      if (!serviceOrder) {
+        return res.status(404).json({ message: "Service order not found" });
+      }
+      
+      // Actualizar estado del proyecto
+      await storage.updateProjectStatus(serviceOrder.projectId, 'completed');
+      
+      return res.json(serviceOrder);
+    } catch (error) {
+      console.error("Error completing service order:", error);
+      return res.status(500).json({ message: "Failed to complete service order" });
+    }
+  });
+  
+  app.patch(`${apiPrefix}/service-orders/:id`, async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const id = parseInt(req.params.id);
+      const serviceOrder = await storage.updateServiceOrder(id, req.body);
+      
+      if (!serviceOrder) {
+        return res.status(404).json({ message: "Service order not found" });
+      }
+      
+      return res.json(serviceOrder);
+    } catch (error) {
+      console.error("Error updating service order:", error);
+      return res.status(500).json({ message: "Failed to update service order" });
+    }
+  });
+  
+  app.delete(`${apiPrefix}/service-orders/:id`, async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const id = parseInt(req.params.id);
+      const serviceOrder = await storage.deleteServiceOrder(id);
+      
+      if (!serviceOrder) {
+        return res.status(404).json({ message: "Service order not found" });
+      }
+      
+      return res.json({ message: "Service order deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting service order:", error);
+      return res.status(500).json({ message: "Failed to delete service order" });
     }
   });
 

@@ -498,7 +498,7 @@ export const storage = {
       .update(quotes)
       .set({
         isApproved: true,
-        approvalDate: new Date()
+        approvalDate: new Date().toISOString()
       })
       .where(eq(quotes.id, id))
       .returning();
@@ -520,8 +520,106 @@ export const storage = {
     });
   },
   
+  async getServiceOrderById(id: number) {
+    return db.query.serviceOrders.findFirst({
+      where: eq(serviceOrders.id, id),
+      with: {
+        project: {
+          with: {
+            client: true
+          }
+        }
+      }
+    });
+  },
+
+  async getServiceOrdersByProjectId(projectId: number) {
+    return db.query.serviceOrders.findMany({
+      where: eq(serviceOrders.projectId, projectId),
+      orderBy: [desc(serviceOrders.createdAt)]
+    });
+  },
+  
   async createServiceOrder(data: ServiceOrderInsert) {
     const [order] = await db.insert(serviceOrders).values(data).returning();
+    
+    // Crear actividad para la nueva orden de servicio
+    await this.createActivity({
+      title: `Nueva orden de trabajo: ${order.orderNumber}`,
+      description: `Se ha creado una nueva orden de trabajo: ${order.description}`,
+      type: 'info',
+      relatedId: order.id,
+      relatedType: 'service_order',
+      createdBy: 1 // Usuario por defecto, se debería reemplazar por el ID real
+    });
+    
+    return order;
+  },
+  
+  async startServiceOrder(id: number, startSignature?: string) {
+    const [order] = await db
+      .update(serviceOrders)
+      .set({
+        startedAt: new Date().toISOString(),
+        startSignature: startSignature || null
+      })
+      .where(eq(serviceOrders.id, id))
+      .returning();
+    
+    if (order) {
+      await this.createActivity({
+        title: `Orden de trabajo iniciada: ${order.orderNumber}`,
+        description: `Se ha iniciado el trabajo para la orden ${order.orderNumber}`,
+        type: 'info',
+        relatedId: order.id,
+        relatedType: 'service_order',
+        createdBy: 1 // Usuario por defecto
+      });
+    }
+    
+    return order;
+  },
+  
+  async completeServiceOrder(id: number, endSignature?: string) {
+    const [order] = await db
+      .update(serviceOrders)
+      .set({
+        completedAt: new Date().toISOString(),
+        endSignature: endSignature || null
+      })
+      .where(eq(serviceOrders.id, id))
+      .returning();
+    
+    if (order) {
+      await this.createActivity({
+        title: `Orden de trabajo completada: ${order.orderNumber}`,
+        description: `Se ha completado el trabajo para la orden ${order.orderNumber}`,
+        type: 'info',
+        relatedId: order.id,
+        relatedType: 'service_order',
+        createdBy: 1 // Usuario por defecto
+      });
+    }
+    
+    return order;
+  },
+  
+  async updateServiceOrder(id: number, data: Partial<ServiceOrderInsert>) {
+    const [order] = await db
+      .update(serviceOrders)
+      .set(data)
+      .where(eq(serviceOrders.id, id))
+      .returning();
+    
+    return order;
+  },
+  
+  async deleteServiceOrder(id: number) {
+    const [order] = await db
+      .delete(serviceOrders)
+      .where(eq(serviceOrders.id, id))
+      .returning();
+    
     return order;
   },
   
