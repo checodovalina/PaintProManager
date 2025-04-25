@@ -19,19 +19,19 @@ export default function Layout({ children }: LayoutProps) {
     setSidebarOpen(!sidebarOpen);
   };
 
-  // Si estamos en la página de autenticación, solo mostramos el contenido principal
+  // If we're on the auth page, only show the main content
   if (location === "/auth") {
     return <>{children}</>;
   }
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Sidebar - solo mostrar si el usuario está autenticado */}
+      {/* Sidebar - only show if user is authenticated */}
       {user && <Sidebar open={sidebarOpen} toggleSidebar={toggleSidebar} />}
 
       {/* Main Content */}
       <div className="flex flex-col flex-1 overflow-hidden">
-        {/* Top Navigation - solo mostrar si el usuario está autenticado */}
+        {/* Top Navigation - only show if user is authenticated */}
         {user && <Header toggleSidebar={toggleSidebar} />}
 
         {/* Main Content Area */}
