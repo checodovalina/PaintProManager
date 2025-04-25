@@ -18,7 +18,7 @@ export default function ServiceOrderList({ orders, isLoading, onViewOrder }: Ser
   
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString('es-MX');
+    return dateString.toString().substring(0, 10);
   };
 
   // Helper function to determine status

@@ -22,12 +22,8 @@ export default function ServiceOrderDetailsModal({ order, isOpen, onClose }: Ser
   
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return "-";
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-MX', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    // Formato simple sin usar el objeto Date directamente
+    return dateString.toString().substring(0, 10);
   };
   
   // Helper function to determine status
