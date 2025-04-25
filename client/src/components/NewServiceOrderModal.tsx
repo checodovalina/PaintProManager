@@ -42,9 +42,9 @@ export default function NewServiceOrderModal({ isOpen, onClose }: NewServiceOrde
     select: (data) => {
       console.log("Datos originales de proyectos:", data);
       if (!data || !data.projects) return { projects: [] };
-      // Filtrar proyectos con cotizaciones enviadas, aprobadas o en progreso
+      // Filtrar proyectos con cotizaciones enviadas, aprobadas, pendientes de visita o en progreso
       const filteredProjects = data.projects.filter((project: ProjectWithClient) => 
-        ['quote_sent', 'quote_approved', 'in_preparation', 'in_progress'].includes(project.status)
+        ['pending_visit', 'quote_sent', 'quote_approved', 'in_preparation', 'in_progress'].includes(project.status)
       );
       console.log("Proyectos filtrados:", filteredProjects);
       return { projects: filteredProjects };
